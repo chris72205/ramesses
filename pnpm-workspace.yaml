@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+minimumReleaseAgeExclude:
+  - vite@8.3.6
+  - '@playwright/test@1.65.0'
+  - jsdom@31.0.0
+  - playwright-core@1.65.0
+  - playwright@1.65.0
+
+# @scarf/scarf is install-time telemetry pulled in transitively; never run its script.
+allowBuilds:
+  '@scarf/scarf': false
