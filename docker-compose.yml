@@ -2,7 +2,7 @@
 # collide with a Postgres.app or local Redis already listening on the defaults.
 services:
   postgres:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     environment:
       POSTGRES_USER: ramesses
       POSTGRES_PASSWORD: ramesses
@@ -10,7 +10,7 @@ services:
     ports:
       - '${POSTGRES_HOST_PORT:-5433}:5432'
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ramesses']
       interval: 5s
@@ -18,7 +18,7 @@ services:
       retries: 10
 
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     ports:
       - '${REDIS_HOST_PORT:-6380}:6379'
     volumes:

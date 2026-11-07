@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17-alpine
+        image: postgres:18-alpine
         env:
           POSTGRES_USER: ramesses
           POSTGRES_PASSWORD: ramesses
@@ -19,7 +19,7 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U ramesses" --health-interval 5s --health-timeout 3s --health-retries 10
       redis:
-        image: redis:7-alpine
+        image: redis:8-alpine
         ports: ['6380:6379']
         options: >-
           --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 10
