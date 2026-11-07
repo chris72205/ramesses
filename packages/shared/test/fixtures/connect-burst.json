@@ -1,0 +1,288 @@
+[
+  {
+    "event_name": "instance_id",
+    "message": "8-0.683174"
+  },
+  {
+    "event_name": "project.refresh",
+    "message": {
+      "project": {
+        "project_id": 129214981372464,
+        "title": "uploaderjp",
+        "project_html": "\n        <img class=\"project-logo\" alt=\"Project logo\" src=\"https://wiki.archiveteam.org/images/9/94/Uploaderjp-icon.jpg\" height=\"50px\" title=\"\"/>\n        <h2>uploader.jp <span class=\"links\"><a href=\"https://uploader.jp/\">Website</a> &middot; <a href=\"https://tracker.archiveteam.org/uploaderjp/\">Leaderboard</a> &middot; <a href=\"https://wiki.archiveteam.org/index.php/uploader.jp\">Wiki</a></span></h2>\n        <p>Archiving uploader.jp.</p>\n    ",
+        "utc_deadline": 1795618740
+      },
+      "status": "running",
+      "items": [
+        {
+          "id": "1793937040fe5ad0d683e5f988-22",
+          "name": "New item",
+          "number": 22,
+          "status": "running",
+          "tasks": [
+            {
+              "id": 129214981717824,
+              "name": "CheckIP",
+              "status": "completed"
+            },
+            {
+              "id": 129214981717680,
+              "name": "GetItemFromTracker",
+              "status": "running"
+            },
+            {
+              "id": 129214981707472,
+              "name": "PrepareDirectories",
+              "status": null
+            },
+            {
+              "id": 129214981706320,
+              "name": "WgetDownload",
+              "status": null
+            },
+            {
+              "id": 129214981706272,
+              "name": "CheckIntegrity",
+              "status": null
+            },
+            {
+              "id": 129214981706224,
+              "name": "SetBadUrls",
+              "status": null
+            },
+            {
+              "id": 129214981684384,
+              "name": "PrepareStatsForTracker",
+              "status": null
+            },
+            {
+              "id": 129214981684336,
+              "name": "MoveFiles",
+              "status": null
+            },
+            {
+              "id": 129214981683280,
+              "name": "Upload",
+              "status": null
+            },
+            {
+              "id": 129214981673792,
+              "name": "SendDoneToTracker",
+              "status": null
+            }
+          ],
+          "output": "Starting CheckIP for Item \nFinished CheckIP for Item \nStarting GetItemFromTracker for Item \nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 60 seconds...\nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 70 seconds...\nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 100 seconds...\nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 70 seconds...\nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 100 seconds...\nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 130 seconds...\nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 80 seconds...\nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 70 seconds...\n",
+          "project": "uploaderjp",
+          "start_time": 1793937040.042403
+        },
+        {
+          "id": "17939372634143ccf0d2f2c630-27",
+          "name": "Item file:uu:sippai_suresure:2541",
+          "number": 27,
+          "status": "running",
+          "tasks": [
+            {
+              "id": 129214981717824,
+              "name": "CheckIP",
+              "status": "completed"
+            },
+            {
+              "id": 129214981717680,
+              "name": "GetItemFromTracker",
+              "status": "running"
+            },
+            {
+              "id": 129214981707472,
+              "name": "PrepareDirectories",
+              "status": null
+            },
+            {
+              "id": 129214981706320,
+              "name": "WgetDownload",
+              "status": null
+            },
+            {
+              "id": 129214981706272,
+              "name": "CheckIntegrity",
+              "status": null
+            },
+            {
+              "id": 129214981706224,
+              "name": "SetBadUrls",
+              "status": null
+            },
+            {
+              "id": 129214981684384,
+              "name": "PrepareStatsForTracker",
+              "status": null
+            },
+            {
+              "id": 129214981684336,
+              "name": "MoveFiles",
+              "status": null
+            },
+            {
+              "id": 129214981683280,
+              "name": "Upload",
+              "status": null
+            },
+            {
+              "id": 129214981673792,
+              "name": "SendDoneToTracker",
+              "status": null
+            }
+          ],
+          "output": "Starting CheckIP for Item \nFinished CheckIP for Item \nStarting GetItemFromTracker for Item \nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 60 seconds...\nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 90 seconds...\nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 120 seconds...\nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 60 seconds...\nFailed GetItemFromTracker for Item file:uu:sippai_suresure:2541\n",
+          "project": "uploaderjp",
+          "start_time": 1793937263.5174458
+        },
+        {
+          "id": "1793937540077cf98f63c954f3-29",
+          "name": "New item",
+          "number": 29,
+          "status": "running",
+          "tasks": [
+            {
+              "id": 129214981717824,
+              "name": "CheckIP",
+              "status": "completed"
+            },
+            {
+              "id": 129214981717680,
+              "name": "GetItemFromTracker",
+              "status": "running"
+            },
+            {
+              "id": 129214981707472,
+              "name": "PrepareDirectories",
+              "status": null
+            },
+            {
+              "id": 129214981706320,
+              "name": "WgetDownload",
+              "status": null
+            },
+            {
+              "id": 129214981706272,
+              "name": "CheckIntegrity",
+              "status": null
+            },
+            {
+              "id": 129214981706224,
+              "name": "SetBadUrls",
+              "status": null
+            },
+            {
+              "id": 129214981684384,
+              "name": "PrepareStatsForTracker",
+              "status": null
+            },
+            {
+              "id": 129214981684336,
+              "name": "MoveFiles",
+              "status": null
+            },
+            {
+              "id": 129214981683280,
+              "name": "Upload",
+              "status": null
+            },
+            {
+              "id": 129214981673792,
+              "name": "SendDoneToTracker",
+              "status": null
+            }
+          ],
+          "output": "Starting CheckIP for Item \nFinished CheckIP for Item \nStarting GetItemFromTracker for Item \nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 70 seconds...\nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 60 seconds...\nTracker rate limiting is active. We don't want to overload the site we're archiving, so we've limited the number of downloads per minute. Retrying after 80 seconds...\n",
+          "project": "uploaderjp",
+          "start_time": 1793937540.2787752
+        }
+      ]
+    }
+  },
+  {
+    "event_name": "warrior.projects_loaded",
+    "message": {
+      "projects": {
+        "urlteam2": {
+          "description": "URL shorteners are a ticking timebomb.",
+          "docker": "atdr.meo.ws/archiveteam/terroroftinytown-client-grab",
+          "lat_lng": [0, 0],
+          "leaderboard": "https://tracker.archiveteam.org:1338/",
+          "logo": "https://wiki.archiveteam.org/images/9/9d/Urlteam-logo-reasonable-size.png",
+          "marker_html": "<a href='https://tracker.archiveteam.org:1338/'><img src='https://wiki.archiveteam.org/images/9/97/Urlteam-logo.png' width='160'/></a>",
+          "name": "urlteam2",
+          "repository": "https://github.com/ArchiveTeam/terroroftinytown-client-grab",
+          "title": "URLTeam 2",
+          "use_docker": false
+        },
+        "uploaderjp": {
+          "description": "Archiving uploader.jp. Short term project.",
+          "docker": "atdr.meo.ws/archiveteam/uploaderjp-grab",
+          "lat_lng": [0, 0],
+          "leaderboard": "https://tracker.archiveteam.org/uploaderjp",
+          "logo": "https://wiki.archiveteam.org/images/9/94/Uploaderjp-icon.jpg",
+          "marker_html": "<a href='https://tracker.archiveteam.org/uploaderjp'><img src='https://wiki.archiveteam.org/images/9/94/Uploaderjp-icon.jpg'/></a>",
+          "name": "uploaderjp",
+          "repository": "https://github.com/ArchiveTeam/uploaderjp-grab",
+          "title": "uploader.jp",
+          "use_docker": false
+        },
+        "usgovernment": {
+          "description": "Archiving the US Government. Short term project.",
+          "docker": "atdr.meo.ws/archiveteam/usgovernment-grab",
+          "lat_lng": [0, 0],
+          "leaderboard": "https://tracker.archiveteam.org/usgovernment",
+          "logo": "https://wiki.archiveteam.org/images/thumb/7/72/Greater_coat_of_arms_of_the_United_States.png/568px-Greater_coat_of_arms_of_the_United_States.png",
+          "marker_html": "<a href='https://tracker.archiveteam.org/usgovernment'><img src='https://wiki.archiveteam.org/images/thumb/7/72/Greater_coat_of_arms_of_the_United_States.png/568px-Greater_coat_of_arms_of_the_United_States.png'/></a>",
+          "name": "usgovernment",
+          "repository": "https://github.com/ArchiveTeam/usgovernment-grab",
+          "title": "US Government",
+          "use_docker": false
+        },
+        "telegram": {
+          "description": "Archiving Telegram. Long term project to archive public post we can find.",
+          "docker": "atdr.meo.ws/archiveteam/telegram-grab",
+          "lat_lng": [0, 0],
+          "leaderboard": "https://tracker.archiveteam.org/telegram",
+          "logo": "https://wiki.archiveteam.org/images/thumb/7/7d/Telegram-icon.png/600px-Telegram-icon.png",
+          "marker_html": "<a href='https://tracker.archiveteam.org/telegram'><img src='https://wiki.archiveteam.org/images/thumb/7/7d/Telegram-icon.png/600px-Telegram-icon.png'/></a>",
+          "name": "telegram",
+          "repository": "https://github.com/ArchiveTeam/telegram-grab",
+          "title": "Telegram",
+          "use_docker": false
+        }
+      }
+    }
+  },
+  {
+    "event_name": "warrior.status",
+    "message": {
+      "status": "RUNNING_PROJECT"
+    }
+  },
+  {
+    "event_name": "warrior.broadcast_message",
+    "message": {
+      "message": null,
+      "hash": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  },
+  {
+    "event_name": "bandwidth",
+    "message": {
+      "received": 139873304,
+      "sent": 68114533,
+      "receiving": 1246.380959603837,
+      "sending": 3999.22237278984,
+      "session_id": "ramesses1"
+    }
+  },
+  {
+    "event_name": "timestamp",
+    "message": {
+      "timestamp": 1793937692.952838,
+      "session_id": "ramesses1"
+    }
+  }
+]
