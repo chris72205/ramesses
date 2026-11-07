@@ -1,0 +1,87 @@
+import { render, screen, waitFor } from '@testing-library/svelte';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ServerMessage } from '@ramesses/shared';
+import App from './App.svelte';
+import type * as ApiModule from './lib/api';
+
+const mocks = vi.hoisted(() => ({
+  listWarriors: vi.fn(),
+  createWarrior: vi.fn(),
+  updateWarrior: vi.fn(),
+  deleteWarrior: vi.fn(),
+}));
+vi.mock('./lib/api', async (importOriginal) => {
+  const original = await importOriginal<typeof ApiModule>();
+  return { ...original, api: mocks };
+});
+
+class FakeWebSocket {
+  static last: FakeWebSocket | undefined;
+  onopen: (() => void) | null = null;
+  onmessage: ((event: { data: string }) => void) | null = null;
+  onclose: (() => void) | null = null;
+  constructor(readonly url: string) {
+    FakeWebSocket.last = this;
+  }
+  close() {}
+  push(message: ServerMessage) {
+    this.onmessage?.({ data: JSON.stringify(message) });
+  }
+}
+
+const totals = {
+  warriors: 0,
+  enabled: 0,
+  connected: 0,
+  receiving: 0,
+  sending: 0,
+  received: 0,
+  sent: 0,
+  itemsInFlight: 0,
+  completed: 0,
+  failed: 0,
+  projects: [],
+  rollingWindowMs: 300_000,
+  avgReceiving: 0,
+  avgSending: 0,
+};
+
+describe('App', () => {
+  beforeEach(() => {
+    vi.stubGlobal('WebSocket', FakeWebSocket);
+    HTMLDialogElement.prototype.showModal = vi.fn();
+    HTMLDialogElement.prototype.close = vi.fn();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    mocks.listWarriors.mockReset();
+  });
+
+  it('shows setup on first run, then the dashboard once warriors exist', async () => {
+    mocks.listWarriors.mockResolvedValueOnce([]);
+    render(App);
+    expect(await screen.findByRole('heading', { name: 'Add your warriors' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Manage warriors' })).not.toBeInTheDocument();
+  });
+
+  it('shows the dashboard when warriors exist and renders pushed state', async () => {
+    mocks.listWarriors.mockResolvedValueOnce([
+      { id: 'w1', name: 'one', host: 'h', port: 8001, enabled: true, createdAt: '', updatedAt: '' },
+    ]);
+    render(App);
+    expect(await screen.findByRole('button', { name: 'Manage warriors' })).toBeInTheDocument();
+    FakeWebSocket.last!.onopen?.();
+    FakeWebSocket.last!.push({ type: 'hello', warriors: [], fleet: totals });
+    expect(await screen.findByText(/No warriors yet/)).toBeInTheDocument();
+    expect(screen.getByText('Live')).toBeInTheDocument();
+  });
+
+  it('reports a backend error with a retry button', async () => {
+    mocks.listWarriors.mockRejectedValueOnce(new Error('ECONNREFUSED')).mockResolvedValueOnce([]);
+    render(App);
+    expect(
+      await screen.findByText(/Could not reach the backend: ECONNREFUSED/),
+    ).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument());
+  });
+});
