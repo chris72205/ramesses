@@ -1,0 +1,279 @@
+/**
+ * Pure reducer shared by the backend collector and the browser store, so both sides turn the
+ * same warrior events into the same snapshot.
+ */
+import type { WarriorRecord } from './protocol.js';
+import type { BandwidthSample, ItemSnapshot, ProjectInfo, WarriorSnapshot } from './snapshot.js';
+import type { WarriorCatalogProject, WarriorEvent, WarriorItem } from './warrior-events.js';
+
+export const LOG_TAIL_LINES = 40;
+export const BANDWIDTH_HISTORY = 90;
+/** Finished items linger this long before being dropped, like the stock UI. */
+export const FINISHED_ITEM_TTL_MS = 15_000;
+
+export function createSnapshot(
+  record: Pick<WarriorRecord, 'id' | 'name' | 'host' | 'port' | 'enabled'>,
+  now: number,
+): WarriorSnapshot {
+  return {
+    id: record.id,
+    name: record.name,
+    host: record.host,
+    port: record.port,
+    enabled: record.enabled,
+    connection: {
+      state: 'connecting',
+      lastSeenAt: null,
+      connectedAt: null,
+      lastError: null,
+      attempts: 0,
+    },
+    instanceId: null,
+    status: null,
+    runnerStatus: null,
+    project: null,
+    items: [],
+    bandwidth: null,
+    bandwidthHistory: [],
+    counters: { completed: 0, failed: 0, canceled: 0 },
+    broadcastMessage: null,
+    catalog: {},
+    rolling: null,
+    updatedAt: now,
+  };
+}
+
+/** Reset the parts of a snapshot that a fresh connection will re-send. */
+export function resetLiveState(snapshot: WarriorSnapshot, now: number): void {
+  snapshot.instanceId = null;
+  snapshot.items = [];
+  snapshot.bandwidth = null;
+  snapshot.updatedAt = now;
+}
+
+/**
+ * Apply one warrior event to a snapshot in place. Returns true when something changed
+ * that the UI should see.
+ */
+export function applyEvent(snapshot: WarriorSnapshot, event: WarriorEvent, now: number): boolean {
+  snapshot.connection.lastSeenAt = now;
+  switch (event.event_name) {
+    case 'instance_id': {
+      const previous = snapshot.instanceId;
+      snapshot.instanceId = event.message;
+      if (previous && previous !== event.message) {
+        // The warrior process restarted; its item ids are no longer meaningful.
+        snapshot.items = [];
+      }
+      return touch(snapshot, now);
+    }
+    case 'project.refresh': {
+      const msg = event.message;
+      if (!msg) return false;
+      snapshot.runnerStatus = msg.status;
+      snapshot.project = msg.project
+        ? resolveProject(
+            msg.project.title,
+            msg.project.project_html,
+            msg.project.utc_deadline,
+            snapshot.catalog,
+            snapshot.project,
+          )
+        : null;
+      snapshot.items = msg.items.map((item) => toItemSnapshot(item, now));
+      return touch(snapshot, now);
+    }
+    case 'warrior.projects_loaded': {
+      snapshot.catalog = {};
+      for (const [name, project] of Object.entries(event.message.projects)) {
+        snapshot.catalog[name] = { ...project, name: project.name ?? name };
+      }
+      if (snapshot.project) {
+        snapshot.project = resolveProject(
+          snapshot.project.title,
+          null,
+          snapshot.project.deadline,
+          snapshot.catalog,
+          snapshot.project,
+        );
+      }
+      return touch(snapshot, now);
+    }
+    case 'warrior.status':
+      snapshot.status = event.message.status;
+      if (event.message.status === 'NO_PROJECT') {
+        snapshot.project = null;
+        snapshot.items = [];
+      }
+      return touch(snapshot, now);
+    case 'runner.status':
+      snapshot.runnerStatus = event.message.status;
+      return touch(snapshot, now);
+    case 'warrior.broadcast_message':
+      snapshot.broadcastMessage = event.message.message;
+      return touch(snapshot, now);
+    case 'warrior.project_selected':
+    case 'warrior.project_installing':
+    case 'warrior.project_installed': {
+      const name = event.message?.project?.name;
+      const catalogEntry = name ? snapshot.catalog[name] : undefined;
+      if (catalogEntry) {
+        snapshot.project = catalogToProject(catalogEntry, snapshot.project?.deadline ?? null);
+        return touch(snapshot, now);
+      }
+      return false;
+    }
+    case 'pipeline.start_item': {
+      const item = toItemSnapshot(event.message.item, now);
+      snapshot.items = [...snapshot.items.filter((i) => i.id !== item.id), item];
+      return touch(snapshot, now);
+    }
+    case 'item.output': {
+      const item = findItem(snapshot, event.message.item_id);
+      if (!item) return false;
+      appendLog(item, event.message.data);
+      return touch(snapshot, now);
+    }
+    case 'item.task_status': {
+      const item = findItem(snapshot, event.message.item_id);
+      if (!item) return false;
+      const task = item.tasks.find((t) => t.id === event.message.task_id);
+      if (!task) return false;
+      task.status = event.message.new_status;
+      return touch(snapshot, now);
+    }
+    case 'item.update_name': {
+      const item = findItem(snapshot, event.message.item_id);
+      if (!item) return false;
+      item.name = event.message.new_name;
+      return touch(snapshot, now);
+    }
+    case 'item.complete':
+    case 'item.fail':
+    case 'item.cancel': {
+      const item = findItem(snapshot, event.message.item_id);
+      const status =
+        event.event_name === 'item.complete'
+          ? 'completed'
+          : event.event_name === 'item.fail'
+            ? 'failed'
+            : 'canceled';
+      snapshot.counters[status] += 1;
+      if (item) {
+        item.status = status;
+        item.finishedAt = now;
+      }
+      return touch(snapshot, now);
+    }
+    case 'bandwidth': {
+      const sample: BandwidthSample = {
+        at: now,
+        received: event.message.received,
+        sent: event.message.sent,
+        receiving: event.message.receiving,
+        sending: event.message.sending,
+      };
+      snapshot.bandwidth = sample;
+      snapshot.bandwidthHistory.push(sample);
+      if (snapshot.bandwidthHistory.length > BANDWIDTH_HISTORY) {
+        snapshot.bandwidthHistory.splice(0, snapshot.bandwidthHistory.length - BANDWIDTH_HISTORY);
+      }
+      return touch(snapshot, now);
+    }
+    case 'timestamp':
+    case 'warrior.settings_update':
+    case 'warrior.project_installation_failed':
+      return false;
+    default:
+      return false;
+  }
+}
+
+/** Drop finished items older than the TTL. Returns true when something was removed. */
+export function pruneFinishedItems(snapshot: WarriorSnapshot, now: number): boolean {
+  const before = snapshot.items.length;
+  snapshot.items = snapshot.items.filter(
+    (item) => item.finishedAt === null || now - item.finishedAt < FINISHED_ITEM_TTL_MS,
+  );
+  if (snapshot.items.length !== before) return touch(snapshot, now);
+  return false;
+}
+
+function touch(snapshot: WarriorSnapshot, now: number): true {
+  snapshot.updatedAt = now;
+  return true;
+}
+
+function findItem(snapshot: WarriorSnapshot, id: string): ItemSnapshot | undefined {
+  return snapshot.items.find((item) => item.id === id);
+}
+
+function toItemSnapshot(item: WarriorItem, now: number): ItemSnapshot {
+  const terminal = item.status !== 'running';
+  const snapshot: ItemSnapshot = {
+    id: item.id,
+    number: item.number,
+    name: item.name,
+    status: item.status,
+    tasks: item.tasks.map((t) => ({ id: t.id, name: t.name, status: t.status })),
+    logTail: '',
+    startTime: item.start_time,
+    finishedAt: terminal ? now : null,
+  };
+  if (item.output) appendLog(snapshot, item.output);
+  return snapshot;
+}
+
+/** Mirrors the stock UI: a carriage return without a newline overwrites the line. */
+export function stripCarriageReturns(text: string): string {
+  return text.replace(/[^\n]*\r(?!\n|$)/g, '');
+}
+
+function appendLog(item: ItemSnapshot, data: string): void {
+  const cleaned = stripCarriageReturns(data).replace(/\r\n/g, '\n');
+  if (!cleaned) return;
+  item.logTail = tailLines(item.logTail + cleaned, LOG_TAIL_LINES);
+}
+
+/** Keep only the last `max` lines of `text`. */
+export function tailLines(text: string, max: number): string {
+  const lines = text.split('\n');
+  return lines.length <= max ? text : lines.slice(lines.length - max).join('\n');
+}
+
+function resolveProject(
+  title: string,
+  projectHtml: string | null,
+  deadline: string | null,
+  catalog: Record<string, WarriorCatalogProject>,
+  previous: ProjectInfo | null,
+): ProjectInfo {
+  const lowered = title.toLowerCase();
+  const match = Object.values(catalog).find(
+    (p) => p.title.toLowerCase() === lowered || p.name.toLowerCase() === lowered,
+  );
+  if (match) return catalogToProject(match, deadline);
+  const logoFromHtml = projectHtml
+    ? (/<img[^>]*src="([^"]+)"/.exec(projectHtml)?.[1] ?? null)
+    : null;
+  const leaderboardFromHtml = projectHtml
+    ? (/<a href="([^"]+)">Leaderboard<\/a>/.exec(projectHtml)?.[1] ?? null)
+    : null;
+  return {
+    title,
+    name: previous?.title === title ? previous.name : null,
+    logo: logoFromHtml ?? (previous?.title === title ? previous.logo : null),
+    leaderboard: leaderboardFromHtml ?? (previous?.title === title ? previous.leaderboard : null),
+    deadline,
+  };
+}
+
+function catalogToProject(entry: WarriorCatalogProject, deadline: string | null): ProjectInfo {
+  return {
+    title: entry.title,
+    name: entry.name,
+    logo: entry.logo || null,
+    leaderboard: entry.leaderboard || null,
+    deadline,
+  };
+}
