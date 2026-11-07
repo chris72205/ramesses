@@ -32,6 +32,7 @@ describe('api client', () => {
     expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
       method: 'POST',
       body: JSON.stringify({ host: 'h', port: 1 }),
+      headers: { 'content-type': 'application/json' },
     });
 
     fetchMock.mockResolvedValueOnce(respond(200, { id: '1', enabled: false }));
@@ -42,6 +43,8 @@ describe('api client', () => {
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
     await expect(api.deleteWarrior('1')).resolves.toBeUndefined();
     expect(fetchMock.mock.calls[2]?.[1]).toMatchObject({ method: 'DELETE' });
+    // No body, so no JSON content-type: Fastify returns 400 for an empty JSON body.
+    expect(fetchMock.mock.calls[2]?.[1]?.headers).not.toHaveProperty('content-type');
   });
 
   it('turns error responses into ApiError with the server message', async () => {

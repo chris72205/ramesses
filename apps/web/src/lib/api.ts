@@ -10,9 +10,13 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  // Fastify rejects a JSON content-type with an empty body, so only send it alongside one.
   const response = await fetch(path, {
     ...init,
-    headers: { 'content-type': 'application/json', ...(init?.headers ?? {}) },
+    headers: {
+      ...(init?.body !== undefined ? { 'content-type': 'application/json' } : {}),
+      ...(init?.headers ?? {}),
+    },
   });
   if (!response.ok) {
     let message = response.statusText;

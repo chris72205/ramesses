@@ -6,13 +6,15 @@ test.describe.configure({ mode: 'serial' });
 
 test('first run asks for warriors, then shows them live on the dashboard', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Add your warriors' })).toBeVisible();
+  // The manage modal renders the same form (closed) outside <main>, so scope to the setup view.
+  const setup = page.locator('main');
+  await expect(setup.getByRole('heading', { name: 'Add your warriors' })).toBeVisible();
 
-  await page.getByPlaceholder('192.0.2.10:8001').fill(`${fakeWarrior()}\n`);
-  await page.getByRole('button', { name: 'Add all' }).click();
-  await expect(page.getByText(`Added (1)`)).toBeVisible();
+  await setup.getByPlaceholder('192.0.2.10:8001').fill(`${fakeWarrior()}\n`);
+  await setup.getByRole('button', { name: 'Add all' }).click();
+  await expect(setup.getByText(`Added (1)`)).toBeVisible();
 
-  await page.getByRole('button', { name: 'Open dashboard' }).click();
+  await setup.getByRole('button', { name: 'Open dashboard' }).click();
   await expect(page.getByText('Live')).toBeVisible();
 
   const card = page.locator('article').first();
@@ -35,15 +37,17 @@ test('warriors can be disabled and removed from the manage modal', async ({ page
   await page.goto('/');
   await page.getByRole('button', { name: 'Manage warriors' }).click();
   const dialog = page.getByRole('dialog');
-  await expect(dialog.getByText(fakeWarrior())).toBeVisible();
+  // The unnamed warrior's name defaults to its address, so match the row rather than the text.
+  await expect(dialog.getByRole('row').filter({ hasText: fakeWarrior() })).toBeVisible();
 
   await dialog.getByLabel('Enabled').uncheck();
-  await expect(page.locator('article').first().getByText('Disabled')).toBeVisible({
+  await expect(page.locator('article').first().getByText('Disabled', { exact: true })).toBeVisible({
     timeout: 10_000,
   });
 
   await dialog.getByRole('button', { name: 'Delete' }).click();
   await expect(dialog.getByText('No warriors configured.')).toBeVisible();
-  await dialog.getByRole('button', { name: 'Close' }).click();
-  await expect(page.getByText('No warriors yet.')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  // With no warriors left the app returns to first-run setup.
+  await expect(page.getByRole('heading', { name: 'Add your warriors' })).toBeVisible();
 });
