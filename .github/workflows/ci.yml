@@ -42,7 +42,7 @@ jobs:
       - run: pnpm --filter @ramesses/server migration:run
       - run: pnpm --filter @ramesses/web exec playwright install --with-deps chromium
       - run: pnpm test:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: reports
