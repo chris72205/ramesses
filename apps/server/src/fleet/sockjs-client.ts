@@ -23,11 +23,13 @@ export interface SockJsClientEvents {
   close: [reason: string];
 }
 
-export interface SockJsClientLike {
-  on<K extends keyof SockJsClientEvents>(
-    event: K,
-    listener: (...args: SockJsClientEvents[K]) => void,
-  ): this;
+/**
+ * What the connection needs from a client: the typed listener surface of
+ * `EventEmitter<SockJsClientEvents>` plus connect and close, so a fake can stand in during tests.
+ * Borrowing `on` from EventEmitter keeps the signature identical to the one both
+ * implementations inherit, whatever shape `@types/node` gives it.
+ */
+export interface SockJsClientLike extends Pick<EventEmitter<SockJsClientEvents>, 'on'> {
   connect(): void;
   close(): void;
 }
