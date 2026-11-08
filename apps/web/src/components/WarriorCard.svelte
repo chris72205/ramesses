@@ -1,13 +1,49 @@
 <script lang="ts">
   import { WARRIOR_STATUS_TEXT, type WarriorSnapshot } from '@ramesses/shared';
+  import { controls } from '../lib/controls.svelte';
   import { formatAgo, formatBytes, formatRate, formatWindow } from '../lib/format';
   import BandwidthSparkline from './BandwidthSparkline.svelte';
+  import ConfirmDialog from './ConfirmDialog.svelte';
   import ConnectionBadge from './ConnectionBadge.svelte';
   import ItemRow from './ItemRow.svelte';
+  import ProjectPicker from './ProjectPicker.svelte';
+  import WarriorSettingsDialog from './WarriorSettingsDialog.svelte';
 
   let { warrior, now }: { warrior: WarriorSnapshot; now: number } = $props();
 
   const live = $derived(warrior.enabled && warrior.connection.state === 'connected');
+  const pending = $derived(controls.pending[warrior.id] ?? null);
+  const controlError = $derived(controls.errors[warrior.id] ?? null);
+  // A warrior that is shutting down or rebooting on its own cannot take a new project.
+  const canStop = $derived(
+    warrior.project !== null &&
+      warrior.status !== 'SHUTTING_DOWN' &&
+      warrior.status !== 'REBOOTING',
+  );
+
+  $effect(() => controls.settle(warrior));
+
+  type Dialog = 'project' | 'stop' | 'settings';
+  let dialog = $state<Dialog | null>(null);
+  let pickedProject = $state<string | null>(null);
+
+  function openDialog(kind: Dialog): void {
+    // The actions menu opens on focus; moving focus away closes it behind the dialog.
+    (document.activeElement as HTMLElement | null)?.blur();
+    pickedProject = null;
+    dialog = kind;
+  }
+
+  function switchProject(): void {
+    const name = pickedProject;
+    dialog = null;
+    if (name) void controls.selectProject(warrior, name);
+  }
+
+  function stopWorking(): void {
+    dialog = null;
+    void controls.deselectProject(warrior);
+  }
   const statusLook = $derived.by(() => {
     switch (warrior.status) {
       case 'RUNNING_PROJECT':
@@ -63,6 +99,39 @@
           </span>
         {/if}
         <ConnectionBadge connection={warrior.connection} enabled={warrior.enabled} {now} />
+        {#if live}
+          <div class="dropdown dropdown-end">
+            <button
+              type="button"
+              class="btn btn-ghost btn-xs btn-square"
+              aria-label="Actions for {warrior.name}"
+              aria-haspopup="menu"
+              disabled={pending !== null}>⋯</button
+            >
+            <ul
+              class="dropdown-content menu menu-sm z-20 mt-1 w-44 rounded-box bg-base-100 p-1 shadow"
+              role="menu"
+            >
+              <li>
+                <button type="button" role="menuitem" onclick={() => openDialog('project')}
+                  >Change project…</button
+                >
+              </li>
+              {#if canStop}
+                <li>
+                  <button type="button" role="menuitem" onclick={() => openDialog('stop')}
+                    >Stop working</button
+                  >
+                </li>
+              {/if}
+              <li>
+                <button type="button" role="menuitem" onclick={() => openDialog('settings')}
+                  >Settings…</button
+                >
+              </li>
+            </ul>
+          </div>
+        {/if}
       </div>
     </header>
 
@@ -125,6 +194,27 @@
       </div>
     {/if}
 
+    {#if pending}
+      <p class="flex grow-0 items-center gap-2 text-sm text-info" role="status">
+        <span class="loading loading-spinner loading-xs"></span>
+        {pending.label}
+      </p>
+    {/if}
+    {#if controlError}
+      <div
+        role="alert"
+        class="alert alert-error alert-soft flex justify-between gap-2 py-2 text-sm"
+      >
+        <span class="min-w-0">{controlError}</span>
+        <button
+          type="button"
+          class="btn btn-ghost btn-xs"
+          aria-label="Dismiss"
+          onclick={() => controls.dismissError(warrior.id)}>✕</button
+        >
+      </div>
+    {/if}
+
     {#if live && warrior.project && warrior.items.length === 0}
       <p class="grow-0 text-sm text-base-content/60">No items in flight.</p>
     {/if}
@@ -182,3 +272,36 @@
     </footer>
   </div>
 </article>
+
+{#if dialog === 'project'}
+  <ConfirmDialog
+    title="Change project for {warrior.name}"
+    confirmLabel="Switch project"
+    disabled={pickedProject === null || pickedProject === warrior.project?.name}
+    onconfirm={switchProject}
+    oncancel={() => (dialog = null)}
+  >
+    <ProjectPicker
+      catalog={warrior.catalog}
+      current={warrior.project?.name ?? null}
+      bind:selected={pickedProject}
+    />
+    <p class="text-xs text-base-content/60">
+      Items in flight finish on the current project before the switch.
+    </p>
+  </ConfirmDialog>
+{:else if dialog === 'stop'}
+  <ConfirmDialog
+    title="Stop working on {warrior.project?.title}?"
+    confirmLabel="Stop working"
+    onconfirm={stopWorking}
+    oncancel={() => (dialog = null)}
+  >
+    <p>
+      Finishes the items in flight, then leaves the warrior idle. It stays up and picks up nothing
+      new until you choose a project.
+    </p>
+  </ConfirmDialog>
+{:else if dialog === 'settings'}
+  <WarriorSettingsDialog {warrior} onclose={() => (dialog = null)} />
+{/if}

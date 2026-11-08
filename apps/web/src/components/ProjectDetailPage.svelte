@@ -15,6 +15,7 @@
   import { groupWarriorsByProject } from '../lib/warriors-by-project';
   import HealthBadge from './HealthBadge.svelte';
   import HistoryChart from './HistoryChart.svelte';
+  import RunOnProjectDialog from './RunOnProjectDialog.svelte';
 
   const RANGES: Array<{ value: HistoryRange; label: string }> = [
     { value: '24h', label: '24 hours' },
@@ -28,6 +29,7 @@
   const mine = $derived(groupWarriorsByProject(fleet.list).get(name) ?? []);
 
   let range = $state<HistoryRange>('24h');
+  let runDialog = $state(false);
   let history = $state<ProjectHistory | null>(null);
   let historyError = $state<string | null>(null);
   let historyLoading = $state(false);
@@ -156,10 +158,17 @@
 
     <section class="card bg-base-100 shadow-sm" aria-labelledby="your-warriors">
       <div class="card-body gap-2 p-4">
-        <h2 id="your-warriors" class="card-title text-base">
-          Your warriors on this project
-          <span class="text-base-content/50">({mine.length})</span>
-        </h2>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="your-warriors" class="card-title text-base">
+            Your warriors on this project
+            <span class="text-base-content/50">({mine.length})</span>
+          </h2>
+          {#if project.active}
+            <button type="button" class="btn btn-sm" onclick={() => (runDialog = true)}>
+              Run on this project…
+            </button>
+          {/if}
+        </div>
         {#if mine.length === 0}
           <p class="text-sm text-base-content/60">
             None of your warriors is working on it right now.
@@ -303,3 +312,7 @@
     {/if}
   {/if}
 </section>
+
+{#if runDialog && project}
+  <RunOnProjectDialog {project} warriors={fleet.list} onclose={() => (runDialog = false)} />
+{/if}
