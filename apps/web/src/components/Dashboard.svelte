@@ -1,12 +1,32 @@
 <script lang="ts">
   import { fleet } from '../lib/fleet.svelte';
   import FleetSummary from './FleetSummary.svelte';
+  import StopAllDialog from './StopAllDialog.svelte';
   import WarriorCard from './WarriorCard.svelte';
+
+  let stopAll = $state(false);
+  const working = $derived(
+    fleet.list.filter((w) => w.enabled && w.connection.state === 'connected' && w.project !== null)
+      .length,
+  );
 </script>
 
-<header>
-  <h1 class="text-xl font-semibold tracking-tight">Dashboard</h1>
-  <p class="text-sm text-base-content/60">Live status and bandwidth of every warrior.</p>
+<header class="flex flex-wrap items-start justify-between gap-2">
+  <div>
+    <h1 class="text-xl font-semibold tracking-tight">Dashboard</h1>
+    <p class="text-sm text-base-content/60">Live status and bandwidth of every warrior.</p>
+  </div>
+  {#if fleet.ready && fleet.list.length > 0}
+    <button
+      type="button"
+      class="btn btn-sm"
+      disabled={working === 0}
+      title={working === 0 ? 'No connected warrior is working on a project' : undefined}
+      onclick={() => (stopAll = true)}
+    >
+      Stop all…
+    </button>
+  {/if}
 </header>
 
 <FleetSummary totals={fleet.totals} />
@@ -25,4 +45,8 @@
       <WarriorCard {warrior} now={fleet.now} />
     {/each}
   </div>
+{/if}
+
+{#if stopAll}
+  <StopAllDialog warriors={fleet.list} onclose={() => (stopAll = false)} />
 {/if}
