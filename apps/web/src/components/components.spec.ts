@@ -116,6 +116,22 @@ describe('ConnectionBadge', () => {
     expect(badge.closest('span[title]')?.getAttribute('title')).toContain('refused');
   });
 
+  it('shows a quiet warrior as connected but silent, with an explanation', () => {
+    render(ConnectionBadge, {
+      connection: { ...warrior.connection, lastSeenAt: NOW - 23_000 },
+      enabled: true,
+      now: NOW,
+    });
+    const badge = screen.getByText('Quiet 23s');
+    expect(badge.closest('span[title]')?.getAttribute('title')).toMatch(/blocks its process/);
+    render(ConnectionBadge, {
+      connection: { ...warrior.connection, lastSeenAt: NOW - 9_000 },
+      enabled: true,
+      now: NOW,
+    });
+    expect(screen.getByText('Connected')).toBeInTheDocument();
+  });
+
   it('shows Disabled regardless of connection state', () => {
     render(ConnectionBadge, { connection: warrior.connection, enabled: false, now: NOW });
     expect(screen.getByText('Disabled')).toBeInTheDocument();

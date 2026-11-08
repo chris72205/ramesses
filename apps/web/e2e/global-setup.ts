@@ -41,6 +41,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   await truncateAll(databaseUrl);
 
   fakeWarrior = await new FakeWarrior({ tickMs: 250 }).start();
+  fakeWarrior.reactToCommands();
   process.env.FAKE_WARRIOR_PORT = String(fakeWarrior.port);
   // The backend samples this stand-in tracker as soon as it elects itself leader.
   fakeTracker = await new FakeTracker().start();

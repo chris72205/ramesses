@@ -106,6 +106,46 @@ export class FakeWarrior {
     for (const ws of this.sockets) if (ws.readyState === ws.OPEN) ws.send(frame);
   }
 
+  /**
+   * Answer control commands with the events a warrior would send: a selection is announced,
+   * starts, and runs `delayMs` later; a deselect stops and idles `delayMs` later. Items from the
+   * recorded burst are left as they are, like a real warrior draining its old pipeline.
+   */
+  public reactToCommands(delayMs = 300): void {
+    const catalog = this.burst.find((e) => e.event_name === 'warrior.projects_loaded');
+    const projects =
+      catalog?.event_name === 'warrior.projects_loaded' ? catalog.message.projects : {};
+    this.options.onCommand = (command, fields) => {
+      if (command === 'select-project') {
+        const name = fields['project_name']!;
+        const title = projects[name]?.title ?? name;
+        this.emit({ event_name: 'warrior.project_selected', message: { project: name } });
+        this.emit({ event_name: 'warrior.status', message: { status: 'STARTING_PROJECT' } });
+        setTimeout(() => {
+          this.emit({
+            event_name: 'project.refresh',
+            message: {
+              project: { project_id: 0, title, project_html: '', utc_deadline: null },
+              status: 'running',
+              items: [],
+            },
+          });
+          this.emit({ event_name: 'warrior.status', message: { status: 'RUNNING_PROJECT' } });
+        }, delayMs).unref();
+      } else if (command === 'deselect-project') {
+        this.emit({ event_name: 'warrior.project_selected', message: { project: null } });
+        this.emit({ event_name: 'warrior.status', message: { status: 'STOPPING_PROJECT' } });
+        setTimeout(() => {
+          this.emit({
+            event_name: 'project.refresh',
+            message: { project: null, status: 'running', items: [] },
+          });
+          this.emit({ event_name: 'warrior.status', message: { status: 'NO_PROJECT' } });
+        }, delayMs).unref();
+      }
+    };
+  }
+
   /** Stop ticking without closing, to simulate a hung socket. */
   public goSilent(): void {
     for (const timer of this.tickers.values()) clearInterval(timer);

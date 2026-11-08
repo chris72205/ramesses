@@ -69,7 +69,8 @@ export interface WarriorEventMap {
   'warrior.status': { status: WarriorStatus };
   'warrior.broadcast_message': { message: string | null; hash: string };
   'warrior.settings_update': unknown;
-  'warrior.project_selected': { project: { name: string } };
+  /** the catalog key as a plain string; null when the warrior was given no or an unknown name */
+  'warrior.project_selected': { project: string | null };
   'warrior.project_installing': { project: { name: string } };
   'warrior.project_installed': { project: { name: string } };
   'warrior.project_installation_failed': { project: { name: string }; output?: string };
