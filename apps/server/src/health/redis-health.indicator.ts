@@ -10,7 +10,7 @@ export class RedisHealthIndicator {
     @Inject(REDIS) private readonly redis: Redis,
   ) {}
 
-  async isHealthy(key: string): Promise<HealthIndicatorResult> {
+  public async isHealthy(key: string): Promise<HealthIndicatorResult> {
     const indicator = this.indicators.check(key);
     try {
       const reply = await this.redis.ping();

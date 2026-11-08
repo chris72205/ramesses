@@ -17,18 +17,18 @@ class FakeConnection extends EventEmitter {
     super();
     this.snapshot = createSnapshot(options.record, 0);
   }
-  get id() {
+  public get id() {
     return this.snapshot.id;
   }
-  start() {
+  public start() {
     this.started += 1;
     this.snapshot.connection.state = 'connected';
   }
-  stop() {
+  public stop() {
     this.stopped += 1;
     this.snapshot.connection.state = 'offline';
   }
-  rename(name: string) {
+  public rename(name: string) {
     this.snapshot.name = name;
     this.emit('update', { kind: 'snapshot' });
   }

@@ -44,9 +44,11 @@ export async function truncateAll(url: string): Promise<void> {
   await client.connect();
   try {
     // Tolerate a brand-new database whose migrations have not run yet.
-    await client.query(
-      "DO $$ BEGIN IF to_regclass('public.warriors') IS NOT NULL THEN TRUNCATE TABLE warriors; END IF; END $$",
-    );
+    for (const table of ['warriors', 'projects']) {
+      await client.query(
+        `DO $$ BEGIN IF to_regclass('public.${table}') IS NOT NULL THEN TRUNCATE TABLE ${table} CASCADE; END IF; END $$`,
+      );
+    }
   } finally {
     await client.end();
   }

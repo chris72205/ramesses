@@ -60,7 +60,7 @@ export class FleetService implements OnModuleInit, OnModuleDestroy {
     this.createConnection = createConnection ?? ((options) => new WarriorConnection(options));
   }
 
-  async onModuleInit(): Promise<void> {
+  public async onModuleInit(): Promise<void> {
     const all = await this.warriors.findAll();
     for (const warrior of all) this.upsert(warrior);
     this.changes = this.warriors.changes$.subscribe((change) => this.onWarriorChange(change));
@@ -68,7 +68,7 @@ export class FleetService implements OnModuleInit, OnModuleDestroy {
     this.logger.log(`Tracking ${all.length} warrior(s)`);
   }
 
-  onModuleDestroy(): void {
+  public onModuleDestroy(): void {
     this.changes?.unsubscribe();
     for (const pending of this.pending.values()) clearTimeout(pending.timer);
     this.pending.clear();
@@ -80,11 +80,11 @@ export class FleetService implements OnModuleInit, OnModuleDestroy {
     this.connections.clear();
   }
 
-  snapshots(): WarriorSnapshot[] {
+  public snapshots(): WarriorSnapshot[] {
     return [...this.connections.values()].map((c) => c.snapshot);
   }
 
-  totals(): FleetTotals {
+  public totals(): FleetTotals {
     const snapshots = this.snapshots();
     const projects = new Set<string>();
     const totals: FleetTotals = {
@@ -128,13 +128,13 @@ export class FleetService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Register a listener for pushes. Returns an unsubscribe function. */
-  subscribe(listener: FleetListener): () => void {
+  public subscribe(listener: FleetListener): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
 
   /** Re-read trailing-window aggregates for every running warrior. Public for tests. */
-  async refreshRolling(): Promise<void> {
+  public async refreshRolling(): Promise<void> {
     const running = [...this.connections.values()].filter((c) => c.isRunning);
     if (running.length === 0) return;
     const stats = await this.metricsService.windowStatsForMany(running.map((c) => c.id));

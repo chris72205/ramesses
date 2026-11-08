@@ -19,17 +19,17 @@ export class FleetGateway
 
   constructor(private readonly fleet: FleetService) {}
 
-  onModuleInit(): void {
+  public onModuleInit(): void {
     this.unsubscribe = this.fleet.subscribe((message) => this.broadcast(message));
   }
 
-  onModuleDestroy(): void {
+  public onModuleDestroy(): void {
     this.unsubscribe?.();
     for (const client of this.clients) client.close(1001, 'server shutting down');
     this.clients.clear();
   }
 
-  handleConnection(client: WebSocket): void {
+  public handleConnection(client: WebSocket): void {
     this.clients.add(client);
     this.send(client, {
       type: 'hello',
@@ -39,7 +39,7 @@ export class FleetGateway
     this.logger.debug(`client connected (${this.clients.size} total)`);
   }
 
-  handleDisconnect(client: WebSocket): void {
+  public handleDisconnect(client: WebSocket): void {
     this.clients.delete(client);
     this.logger.debug(`client disconnected (${this.clients.size} total)`);
   }

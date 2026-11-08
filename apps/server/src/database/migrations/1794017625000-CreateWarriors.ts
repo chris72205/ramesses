@@ -3,7 +3,7 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
 export class CreateWarriors1794017625000 implements MigrationInterface {
   name = 'CreateWarriors1794017625000';
 
-  async up(queryRunner: QueryRunner): Promise<void> {
+  public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`
       CREATE TABLE "warriors" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -18,7 +18,7 @@ export class CreateWarriors1794017625000 implements MigrationInterface {
     `);
   }
 
-  async down(queryRunner: QueryRunner): Promise<void> {
+  public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP TABLE "warriors"`);
   }
 }

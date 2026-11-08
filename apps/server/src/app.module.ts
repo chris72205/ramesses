@@ -6,6 +6,8 @@ import { envSchema, loadEnv } from './config/env';
 import { DatabaseModule } from './database/database.module';
 import { FleetModule } from './fleet/fleet.module';
 import { HealthModule } from './health/health.module';
+import { LeaderModule } from './leader/leader.module';
+import { ProjectsModule } from './projects/projects.module';
 import { RedisModule } from './redis/redis.module';
 import { WarriorsModule } from './warriors/warriors.module';
 
@@ -29,9 +31,11 @@ const isProduction = env.NODE_ENV === 'production';
       : []),
     DatabaseModule,
     RedisModule,
+    LeaderModule,
     HealthModule,
     WarriorsModule,
     FleetModule,
+    ProjectsModule,
   ],
 })
 export class AppModule {}

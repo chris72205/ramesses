@@ -10,13 +10,13 @@ class FakeWebSocket {
   constructor(readonly url: string) {
     FakeWebSocket.instances.push(this);
   }
-  addEventListener(type: string, listener: Listener) {
+  public addEventListener(type: string, listener: Listener) {
     this.listeners.set(type, [...(this.listeners.get(type) ?? []), listener]);
   }
-  close() {
+  public close() {
     this.closed = true;
   }
-  emit(type: string, payload: { data?: string; code?: number; reason?: string } = {}) {
+  public emit(type: string, payload: { data?: string; code?: number; reason?: string } = {}) {
     for (const listener of this.listeners.get(type) ?? []) listener(payload);
   }
 }

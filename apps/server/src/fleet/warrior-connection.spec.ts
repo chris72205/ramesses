@@ -15,17 +15,17 @@ import {
 class FakeClient extends EventEmitter<SockJsClientEvents> implements SockJsClientLike {
   connected = false;
   closed = false;
-  connect() {
+  public connect() {
     this.connected = true;
   }
-  close() {
+  public close() {
     this.closed = true;
   }
-  open() {
+  public open() {
     this.emit('frame');
     this.emit('open');
   }
-  tick() {
+  public tick() {
     this.emit('frame');
     this.emit('event', { event_name: 'timestamp', message: { timestamp: 1 } });
   }

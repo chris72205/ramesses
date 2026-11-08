@@ -46,7 +46,7 @@ export class SockJsClient extends EventEmitter<SockJsClientEvents> implements So
     super();
   }
 
-  connect(): void {
+  public connect(): void {
     this.closedByUs = false;
     const socket = new WebSocket(this.url);
     this.socket = socket;
@@ -64,7 +64,7 @@ export class SockJsClient extends EventEmitter<SockJsClientEvents> implements So
     });
   }
 
-  close(): void {
+  public close(): void {
     this.closedByUs = true;
     const socket = this.socket;
     if (!socket) return;

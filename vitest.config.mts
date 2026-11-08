@@ -25,7 +25,7 @@ export default defineConfig({
         'apps/web/src/main.ts',
         'apps/web/src/test-setup.ts',
       ],
-      // 90% per area (owner requirement), measured separately for shared, backend, and frontend.
+      // 90% per area, measured separately for shared, backend, and frontend.
       thresholds: {
         'packages/shared/src/**': { lines: 90, statements: 90, functions: 90, branches: 80 },
         'apps/server/src/**': { lines: 90, statements: 90, functions: 90, branches: 80 },

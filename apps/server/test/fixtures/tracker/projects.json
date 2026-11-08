@@ -1,0 +1,219 @@
+{
+  "auto_project": "telegram",
+  "auto_projects_config": [
+    {
+      "project": "metaadlibrary",
+      "weight": 2
+    },
+    {
+      "project": "uploaderjp",
+      "weight": 2
+    },
+    {
+      "project": "instagram",
+      "weight": 1
+    },
+    {
+      "project": "sogouwenwen",
+      "weight": 5
+    },
+    {
+      "project": "telegram",
+      "weight": 0
+    }
+  ],
+  "projects": [
+    {
+      "name": "urlteam2",
+      "title": "URLTeam 2",
+      "description": "URL shorteners are a ticking timebomb.",
+      "logo": "https://wiki.archiveteam.org/images/9/9d/Urlteam-logo-reasonable-size.png",
+      "leaderboard": "https://tracker.archiveteam.org:1338/",
+      "repository": "https://github.com/ArchiveTeam/terroroftinytown-client-grab",
+      "docker": "atdr.meo.ws/archiveteam/terroroftinytown-client-grab"
+    },
+    {
+      "name": "urls",
+      "title": "URLs",
+      "description": "*WARNING IP BLOCK LISTS* - URLs from various sources. Long term project.",
+      "logo": "https://wiki.archiveteam.org/images/thumb/7/77/ArchiveTeamWarriorLogo.png/235px-ArchiveTeamWarriorLogo.png",
+      "leaderboard": "https://tracker.archiveteam.org/urls",
+      "repository": "https://github.com/ArchiveTeam/urls-grab",
+      "docker": "atdr.meo.ws/archiveteam/urls-grab"
+    },
+    {
+      "name": "sogouwenwen",
+      "title": "\u641c\u72d7\u95ee\u95ee",
+      "description": "Archiving \u641c\u72d7\u95ee\u95ee (Sogou Wenwen). Short term project.",
+      "logo": "https://wiki.archiveteam.org/images/9/96/Sogou-wenwen-icon.png",
+      "leaderboard": "https://tracker.archiveteam.org/sogouwenwen",
+      "repository": "https://github.com/ArchiveTeam/sogouwenwen-grab",
+      "docker": "atdr.meo.ws/archiveteam/sogouwenwen-grab"
+    },
+    {
+      "name": "uploaderjp",
+      "title": "uploader.jp",
+      "description": "Archiving uploader.jp. Short term project.",
+      "logo": "https://wiki.archiveteam.org/images/9/94/Uploaderjp-icon.jpg",
+      "leaderboard": "https://tracker.archiveteam.org/uploaderjp",
+      "repository": "https://github.com/ArchiveTeam/uploaderjp-grab",
+      "docker": "atdr.meo.ws/archiveteam/uploaderjp-grab"
+    },
+    {
+      "name": "weebly",
+      "title": "Weebly",
+      "description": "Archiving Weebly. Short term project.",
+      "logo": "https://wiki.archiveteam.org/images/3/36/Weebly-icon.png",
+      "leaderboard": "https://tracker.archiveteam.org/weebly",
+      "repository": "https://github.com/ArchiveTeam/weebly-grab",
+      "docker": "atdr.meo.ws/archiveteam/weebly-grab"
+    },
+    {
+      "name": "instagram",
+      "title": "Instagram",
+      "description": "Archiving Instagram. Long term project.",
+      "logo": "https://wiki.archiveteam.org/images/thumb/a/a5/Instagram_icon.png/600px-Instagram_icon.png",
+      "leaderboard": "https://tracker.archiveteam.org/instagram",
+      "repository": "",
+      "docker": "atdr.meo.ws/archiveteam/instagram-grab"
+    },
+    {
+      "name": "sinavideo",
+      "title": "Sina Video",
+      "description": "Archiving Sina Video (historical). Short term project.",
+      "logo": "https://wiki.archiveteam.org/images/thumb/9/9e/Sina-icon.png/783px-Sina-icon.png",
+      "leaderboard": "https://tracker.archiveteam.org/sinavideo",
+      "repository": "",
+      "docker": "atdr.meo.ws/archiveteam/sinavideo-grab"
+    },
+    {
+      "name": "wikimediaetherpad",
+      "title": "Wikimedia Etherpad",
+      "description": "Archiving Wikimedia Etherpad. Short term project.",
+      "logo": "https://wiki.archiveteam.org/images/6/62/Wikimedia-etherpad-icon.png",
+      "leaderboard": "https://tracker.archiveteam.org/wikimediaetherpad",
+      "repository": "https://github.com/ArchiveTeam/wikimediaetherpad-grab",
+      "docker": "atdr.meo.ws/archiveteam/wikimediaetherpad-grab"
+    },
+    {
+      "name": "recursive",
+      "title": "Recursive Jobs",
+      "description": "Various recursive jobs. Long term project.",
+      "logo": "https://wiki.archiveteam.org/images/thumb/7/77/ArchiveTeamWarriorLogo.png/235px-ArchiveTeamWarriorLogo.png",
+      "leaderboard": "https://tracker.archiveteam.org/recursive",
+      "repository": "https://github.com/ArchiveTeam/recursive-grab",
+      "docker": "atdr.meo.ws/archiveteam/recursive-grab"
+    },
+    {
+      "name": "microsoftupdate",
+      "title": "Microsoft Update",
+      "description": "Archiving Microsoft Update. Long term project.",
+      "logo": "https://wiki.archiveteam.org/images/f/f8/Windowsupdate-icon.png",
+      "leaderboard": "https://tracker.archiveteam.org/microsoftupdate",
+      "repository": "https://github.com/ArchiveTeam/microsoftupdate-grab",
+      "docker": "atdr.meo.ws/archiveteam/microsoftupdate-grab"
+    },
+    {
+      "name": "metaadlibrary",
+      "title": "Meta Ad Library",
+      "description": "Archiving Meta Ad Library. Short term project.",
+      "logo": "https://wiki.archiveteam.org/images/thumb/8/80/Meta-icon.png/800px-Meta-icon.png",
+      "leaderboard": "https://tracker.archiveteam.org/metaadlibrary",
+      "repository": "",
+      "docker": "atdr.meo.ws/archiveteam/metaadlibrary-grab"
+    },
+    {
+      "name": "twitch",
+      "title": "Twitch",
+      "description": "Archiving Twitch nonvideo-data and some video data. Short term project.",
+      "logo": "https://wiki.archiveteam.org/images/e/ed/Twitch-icon.png",
+      "leaderboard": "https://tracker.archiveteam.org/twitch",
+      "repository": "https://github.com/ArchiveTeam/twitch-grab",
+      "docker": "atdr.meo.ws/archiveteam/twitch-grab"
+    },
+    {
+      "name": "usgovernment",
+      "title": "US Government",
+      "description": "Archiving the US Government. Short term project.",
+      "logo": "https://wiki.archiveteam.org/images/thumb/7/72/Greater_coat_of_arms_of_the_United_States.png/568px-Greater_coat_of_arms_of_the_United_States.png",
+      "leaderboard": "https://tracker.archiveteam.org/usgovernment",
+      "repository": "https://github.com/ArchiveTeam/usgovernment-grab",
+      "docker": "atdr.meo.ws/archiveteam/usgovernment-grab"
+    },
+    {
+      "name": "blogger",
+      "title": "Blogger",
+      "description": "Archiving Blogger. Long term project.",
+      "logo": "https://wiki.archiveteam.org/images/thumb/2/2e/Blogger-icon.png/603px-Blogger-icon.png",
+      "leaderboard": "https://tracker.archiveteam.org/blogger",
+      "repository": "https://github.com/ArchiveTeam/blogger-grab",
+      "docker": "atdr.meo.ws/archiveteam/blogger-grab"
+    },
+    {
+      "name": "telegram",
+      "title": "Telegram",
+      "description": "Archiving Telegram. Long term project to archive public post we can find.",
+      "logo": "https://wiki.archiveteam.org/images/thumb/7/7d/Telegram-icon.png/600px-Telegram-icon.png",
+      "leaderboard": "https://tracker.archiveteam.org/telegram",
+      "repository": "https://github.com/ArchiveTeam/telegram-grab",
+      "docker": "atdr.meo.ws/archiveteam/telegram-grab"
+    },
+    {
+      "name": "youtube",
+      "title": "YouTube",
+      "description": "Archiving selected YouTube video. Long term project. WARNING: IP address is saved in the video URLs.",
+      "logo": "https://wiki.archiveteam.org/images/thumb/5/59/Youtube_icon.png/320px-Youtube_icon.png",
+      "leaderboard": "https://tracker.archiveteam.org/youtube",
+      "repository": "https://github.com/ArchiveTeam/youtube-grab",
+      "docker": "atdr.meo.ws/archiveteam/youtube-grab"
+    },
+    {
+      "name": "githubtest2",
+      "title": "GitHub",
+      "description": "Archiving GitHub. In cooperation with Internet Archive and GitHub.",
+      "logo": "https://wiki.archiveteam.org/images/2/21/Github-icon.png",
+      "leaderboard": "https://tracker.archiveteam.org/github",
+      "repository": "https://github.com/ArchiveTeam/github-grab",
+      "docker": "atdr.meo.ws/archiveteam/github-grab"
+    },
+    {
+      "name": "mediafire",
+      "title": "MediaFire",
+      "description": "Archiving MediaFire. Long term project.",
+      "logo": "https://wiki.archiveteam.org/images/thumb/8/8b/Mediafire-icon.png/320px-Mediafire-icon.png",
+      "leaderboard": "https://tracker.archiveteam.org/mediafire",
+      "repository": "https://github.com/ArchiveTeam/mediafire-grab",
+      "docker": "atdr.meo.ws/archiveteam/mediafire-grab"
+    },
+    {
+      "name": "pastebin",
+      "title": "Pastebin",
+      "description": "Pastebin pastes. Long term project.",
+      "logo": "https://wiki.archiveteam.org/images/3/35/Pastebin.com_logo.png",
+      "leaderboard": "https://tracker.archiveteam.org/pastebin/",
+      "repository": "https://github.com/ArchiveTeam/pastebin-grab",
+      "docker": "atdr.meo.ws/archiveteam/pastebin-grab"
+    },
+    {
+      "name": "imgur",
+      "title": "Imgur",
+      "description": "Archiving Imgur. Long term project.",
+      "logo": "https://wiki.archiveteam.org/images/c/c4/Imgur-icon.png",
+      "leaderboard": "https://tracker.archiveteam.org/imgur",
+      "repository": "https://github.com/ArchiveTeam/imgur-grab",
+      "docker": "atdr.meo.ws/archiveteam/imgur-grab"
+    },
+    {
+      "name": "vkontakte",
+      "title": "[WIP] \u0412\u041a\u043e\u043d\u0442\u0430\u043a\u0442\u0435",
+      "description": "Archiving \u0412\u041a\u043e\u043d\u0442\u0430\u043a\u0442\u0435 (VKontakte). Long term project.",
+      "logo": "https://wiki.archiveteam.org/images/4/46/VKontakte_logo.png",
+      "leaderboard": "https://tracker.archiveteam.org/vkontakte/",
+      "repository": "https://github.com/ArchiveTeam/vkontakte-grab",
+      "docker": "atdr.meo.ws/archiveteam/vkontakte-grab"
+    }
+  ],
+  "warrior": {
+    "seesaw_version": "0.8.2"
+  }
+}

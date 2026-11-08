@@ -21,6 +21,6 @@ export const METRICS_SINK = Symbol('METRICS_SINK');
 
 @Injectable()
 export class NoopMetricsSink implements MetricsSink {
-  onBandwidth(): void {}
-  onItemFinished(): void {}
+  public onBandwidth(): void {}
+  public onItemFinished(): void {}
 }

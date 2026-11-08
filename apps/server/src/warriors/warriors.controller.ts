@@ -18,18 +18,18 @@ export class WarriorsController {
   constructor(private readonly warriors: WarriorsService) {}
 
   @Get()
-  async list(): Promise<WarriorRecord[]> {
+  public async list(): Promise<WarriorRecord[]> {
     const all = await this.warriors.findAll();
     return all.map((w) => w.toRecord());
   }
 
   @Post()
-  async create(@Body() body: CreateWarriorDto): Promise<WarriorRecord> {
+  public async create(@Body() body: CreateWarriorDto): Promise<WarriorRecord> {
     return (await this.warriors.create(body)).toRecord();
   }
 
   @Patch(':id')
-  async update(
+  public async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() body: UpdateWarriorDto,
   ): Promise<WarriorRecord> {
@@ -38,7 +38,7 @@ export class WarriorsController {
 
   @Delete(':id')
   @HttpCode(204)
-  async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+  public async remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     await this.warriors.remove(id);
   }
 }

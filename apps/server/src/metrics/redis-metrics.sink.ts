@@ -24,7 +24,7 @@ export class RedisMetricsSink implements MetricsSink {
     this.retentionMs = config.get('METRICS_RETENTION_SEC', { infer: true }) * 1000;
   }
 
-  onBandwidth(warrior: WarriorRef, sample: BandwidthSample): void {
+  public onBandwidth(warrior: WarriorRef, sample: BandwidthSample): void {
     const key = bandwidthKey(warrior.id);
     this.redis
       .multi()
@@ -35,7 +35,7 @@ export class RedisMetricsSink implements MetricsSink {
       .catch((error: Error) => this.warn(error));
   }
 
-  onItemFinished(): void {
+  public onItemFinished(): void {
     // Item outcomes are counted in memory for v0.1; a durable counter can live here later.
   }
 

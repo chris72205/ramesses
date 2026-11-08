@@ -1,0 +1,27 @@
+{
+  "counts": {
+    "rcr": 0.9724288403009,
+    "out": 20000014,
+    "done": 50130635318,
+    "todo": 16537395
+  },
+  "downloaders": ["KingThrillgore", "Areppa", "Yeetieboi"],
+  "downloader_count": {
+    "KingThrillgore": 1042744,
+    "Areppa": 1817129,
+    "Yeetieboi": 301764
+  },
+  "downloader_bytes": {
+    "KingThrillgore": 117998971730,
+    "Areppa": 315787463758,
+    "Yeetieboi": 56867135039
+  },
+  "domain_bytes": {
+    "data": 9246530868927500.0,
+    "dmta": 21516
+  },
+  "total_items_todo": 16537395,
+  "total_items_out": 20000014,
+  "total_items_done": 50130635318,
+  "total_items": 50167172727
+}

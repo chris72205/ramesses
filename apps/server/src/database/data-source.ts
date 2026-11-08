@@ -1,4 +1,6 @@
 import { DataSource, type DataSourceOptions } from 'typeorm';
+import { ProjectStat } from '../projects/project-stat.entity';
+import { Project } from '../projects/project.entity';
 import { Warrior } from '../warriors/warrior.entity';
 import * as migrations from './migrations';
 
@@ -6,7 +8,7 @@ export function dataSourceOptions(url: string): DataSourceOptions {
   return {
     type: 'postgres',
     url,
-    entities: [Warrior],
+    entities: [Warrior, Project, ProjectStat],
     migrations: Object.values(migrations),
     migrationsRun: true,
     synchronize: false,

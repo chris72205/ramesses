@@ -17,13 +17,13 @@ class FakeWebSocket {
   constructor(readonly url: string) {
     FakeWebSocket.instances.push(this);
   }
-  close() {
+  public close() {
     this.closed = true;
   }
-  open() {
+  public open() {
     this.onopen?.();
   }
-  push(message: ServerMessage) {
+  public push(message: ServerMessage) {
     this.onmessage?.({ data: JSON.stringify(message) });
   }
 }

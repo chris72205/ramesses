@@ -40,6 +40,14 @@ export default tseslint.config(
         { checksVoidReturn: { attributes: false } },
       ],
       '@typescript-eslint/no-empty-function': 'off',
+      // Every method and accessor states public, protected, or private.
+      '@typescript-eslint/explicit-member-accessibility': [
+        'error',
+        {
+          accessibility: 'explicit',
+          overrides: { constructors: 'off', properties: 'off', parameterProperties: 'off' },
+        },
+      ],
     },
   },
   {

@@ -83,15 +83,15 @@ export class WarriorConnection extends EventEmitter<WarriorConnectionEvents> {
     if (!options.record.enabled) this.snapshot.connection.state = 'offline';
   }
 
-  get id(): string {
+  public get id(): string {
     return this.snapshot.id;
   }
 
-  get isRunning(): boolean {
+  public get isRunning(): boolean {
     return this.running;
   }
 
-  start(): void {
+  public start(): void {
     if (this.running) return;
     this.running = true;
     this.snapshot.connection.attempts = 0;
@@ -101,7 +101,7 @@ export class WarriorConnection extends EventEmitter<WarriorConnectionEvents> {
     this.connect();
   }
 
-  stop(): void {
+  public stop(): void {
     if (!this.running) return;
     this.running = false;
     this.clearTimers();
@@ -114,7 +114,7 @@ export class WarriorConnection extends EventEmitter<WarriorConnectionEvents> {
   }
 
   /** Update display fields that do not require a reconnect. */
-  rename(name: string): void {
+  public rename(name: string): void {
     if (this.snapshot.name === name) return;
     this.snapshot.name = name;
     this.snapshot.updatedAt = this.now();

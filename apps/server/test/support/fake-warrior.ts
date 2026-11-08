@@ -43,19 +43,19 @@ export class FakeWarrior {
     });
   }
 
-  get port(): number {
+  public get port(): number {
     const address = this.http.address();
     if (!address || typeof address === 'string') throw new Error('not listening');
     return address.port;
   }
 
-  async start(): Promise<this> {
+  public async start(): Promise<this> {
     this.http.listen(0, '127.0.0.1');
     await once(this.http, 'listening');
     return this;
   }
 
-  async stop(): Promise<void> {
+  public async stop(): Promise<void> {
     for (const ws of this.sockets) ws.terminate();
     for (const timer of this.tickers.values()) clearInterval(timer);
     this.tickers.clear();
@@ -65,19 +65,19 @@ export class FakeWarrior {
   }
 
   /** Push one event to every connected session. */
-  emit(event: WarriorEvent): void {
+  public emit(event: WarriorEvent): void {
     const frame = 'a' + JSON.stringify([JSON.stringify(event)]);
     for (const ws of this.sockets) if (ws.readyState === ws.OPEN) ws.send(frame);
   }
 
   /** Stop ticking without closing, to simulate a hung socket. */
-  goSilent(): void {
+  public goSilent(): void {
     for (const timer of this.tickers.values()) clearInterval(timer);
     this.tickers.clear();
   }
 
   /** Close every session the way a restarting warrior would. */
-  dropAll(): void {
+  public dropAll(): void {
     for (const ws of this.sockets) ws.close(1001, 'restarting');
   }
 

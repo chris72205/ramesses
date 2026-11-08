@@ -20,7 +20,7 @@ export class MetricsService {
   }
 
   /** Raw samples for one warrior inside the window ending at `now`. */
-  async samples(
+  public async samples(
     warriorId: string,
     windowMs = this.windowMs,
     now = Date.now(),
@@ -29,7 +29,7 @@ export class MetricsService {
     return members.map(decodeSample).filter((s): s is BandwidthSample => s !== null);
   }
 
-  async windowStats(
+  public async windowStats(
     warriorId: string,
     windowMs = this.windowMs,
     now = Date.now(),
@@ -38,7 +38,7 @@ export class MetricsService {
   }
 
   /** Drop a warrior's samples, e.g. when it is deleted. Never throws. */
-  async forget(warriorId: string): Promise<void> {
+  public async forget(warriorId: string): Promise<void> {
     await this.redis.del(bandwidthKey(warriorId)).catch((error: Error) => {
       this.logger.debug(`forget failed: ${error.message}`);
     });
@@ -48,7 +48,7 @@ export class MetricsService {
    * Window stats for many warriors in one round trip. Returns null for every id when Redis
    * is unavailable so callers can show "no data" rather than stale numbers.
    */
-  async windowStatsForMany(
+  public async windowStatsForMany(
     warriorIds: string[],
     windowMs = this.windowMs,
     now = Date.now(),

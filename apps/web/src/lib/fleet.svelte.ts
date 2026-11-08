@@ -55,13 +55,13 @@ export class FleetStore {
   private clock: ReturnType<typeof setInterval> | null = null;
   private stopped = false;
 
-  start(): void {
+  public start(): void {
     this.stopped = false;
     this.clock = setInterval(() => this.tick(), 1000);
     this.connect();
   }
 
-  stop(): void {
+  public stop(): void {
     this.stopped = true;
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
     if (this.clock) clearInterval(this.clock);

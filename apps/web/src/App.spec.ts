@@ -23,8 +23,8 @@ class FakeWebSocket {
   constructor(readonly url: string) {
     FakeWebSocket.last = this;
   }
-  close() {}
-  push(message: ServerMessage) {
+  public close() {}
+  public push(message: ServerMessage) {
     this.onmessage?.({ data: JSON.stringify(message) });
   }
 }

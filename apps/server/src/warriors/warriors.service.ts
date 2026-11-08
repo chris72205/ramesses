@@ -21,21 +21,21 @@ export class WarriorsService {
   constructor(@InjectRepository(Warrior) private readonly repo: Repository<Warrior>) {}
 
   /** Emits after every successful create, update, or remove. */
-  get changes$(): Observable<WarriorChange> {
+  public get changes$(): Observable<WarriorChange> {
     return this.changes.asObservable();
   }
 
-  findAll(): Promise<Warrior[]> {
+  public findAll(): Promise<Warrior[]> {
     return this.repo.find({ order: { createdAt: 'ASC' } });
   }
 
-  async findOne(id: string): Promise<Warrior> {
+  public async findOne(id: string): Promise<Warrior> {
     const warrior = await this.repo.findOneBy({ id });
     if (!warrior) throw new NotFoundException(`Warrior ${id} not found`);
     return warrior;
   }
 
-  async create(input: CreateWarriorInput): Promise<Warrior> {
+  public async create(input: CreateWarriorInput): Promise<Warrior> {
     const port = input.port ?? DEFAULT_WARRIOR_PORT;
     const warrior = this.repo.create({
       host: input.host,
@@ -48,7 +48,7 @@ export class WarriorsService {
     return saved;
   }
 
-  async update(id: string, input: UpdateWarriorInput): Promise<Warrior> {
+  public async update(id: string, input: UpdateWarriorInput): Promise<Warrior> {
     const warrior = await this.findOne(id);
     if (input.name !== undefined && input.name.trim()) warrior.name = input.name.trim();
     if (input.port !== undefined) warrior.port = input.port;
@@ -58,7 +58,7 @@ export class WarriorsService {
     return saved;
   }
 
-  async remove(id: string): Promise<void> {
+  public async remove(id: string): Promise<void> {
     const warrior = await this.findOne(id);
     await this.repo.remove(warrior);
     this.changes.next({ type: 'removed', id });

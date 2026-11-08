@@ -30,7 +30,7 @@ export class Warrior {
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt!: Date;
 
-  toRecord(): WarriorRecord {
+  public toRecord(): WarriorRecord {
     return {
       id: this.id,
       name: this.name,

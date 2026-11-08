@@ -46,7 +46,7 @@ class PushClient {
     });
   }
 
-  open(): Promise<void> {
+  public open(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.ws.once('open', resolve);
       this.ws.once('error', reject);
@@ -54,7 +54,7 @@ class PushClient {
   }
 
   /** Resolve with the first message after the previous wait that satisfies `test`. */
-  waitFor<T extends ServerMessage>(
+  public waitFor<T extends ServerMessage>(
     label: string,
     test: (m: ServerMessage) => m is T,
     timeoutMs = 10_000,
@@ -84,7 +84,7 @@ class PushClient {
   }
 
   /** Wait until the locally reduced state for `id` satisfies `predicate`; returns that state. */
-  async waitForState(
+  public async waitForState(
     label: string,
     id: string,
     predicate: (w: WarriorSnapshot) => boolean,
@@ -104,7 +104,7 @@ class PushClient {
     return this.warriors.get(id)!;
   }
 
-  close(): void {
+  public close(): void {
     this.ws.close();
   }
 

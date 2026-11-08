@@ -1,0 +1,26 @@
+{
+  "counts": {
+    "done": 28054009556,
+    "out": 1283394,
+    "todo": 340,
+    "rcr": 0.074828797356821
+  },
+  "downloaders": ["nstrom", "MrKrebz", "Pingerfowder"],
+  "downloader_count": {
+    "nstrom": 918063148,
+    "MrKrebz": 2444,
+    "Pingerfowder": 87414
+  },
+  "downloader_bytes": {
+    "nstrom": 90064963327186,
+    "MrKrebz": 248123785,
+    "Pingerfowder": 5743974481
+  },
+  "domain_bytes": {
+    "data": 2307673441809400.0
+  },
+  "total_items_todo": 340,
+  "total_items_out": 1283394,
+  "total_items_done": 28054009556,
+  "total_items": 28055293290
+}
