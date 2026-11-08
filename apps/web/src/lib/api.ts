@@ -1,4 +1,5 @@
 import type {
+  ControlAccepted,
   CreateWarriorInput,
   HistoryRange,
   ProjectDetail,
@@ -6,13 +7,17 @@ import type {
   ProjectSummary,
   RefreshResult,
   UpdateWarriorInput,
+  UpdateWarriorSettingsInput,
   WarriorRecord,
+  WarriorSettings,
 } from '@ramesses/shared';
 
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    /** per-field messages, when the server rejected individual fields (422) */
+    readonly fields: Record<string, string> = {},
   ) {
     super(message);
   }
@@ -29,14 +34,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!response.ok) {
     let message = response.statusText;
+    let fields: Record<string, string> = {};
     try {
-      const body = (await response.json()) as { message?: string | string[] };
+      const body = (await response.json()) as {
+        message?: string | string[];
+        fields?: Record<string, string>;
+      };
       if (body.message)
         message = Array.isArray(body.message) ? body.message.join('; ') : body.message;
+      if (body.fields) fields = body.fields;
     } catch {
       // keep statusText
     }
-    throw new ApiError(response.status, message);
+    throw new ApiError(response.status, message, fields);
   }
   if (response.status === 204) return undefined as T;
   return (await response.json()) as T;
@@ -55,6 +65,19 @@ export const api = {
   getProjectHistory: (name: string, range: HistoryRange) =>
     request<ProjectHistory>(`/api/projects/${encodeURIComponent(name)}/history?range=${range}`),
   refreshProjects: () => request<RefreshResult>('/api/projects/refresh', { method: 'POST' }),
+  selectProject: (id: string, name: string) =>
+    request<ControlAccepted>(`/api/warriors/${id}/project`, {
+      method: 'PUT',
+      body: JSON.stringify({ name }),
+    }),
+  deselectProject: (id: string) =>
+    request<ControlAccepted>(`/api/warriors/${id}/project`, { method: 'DELETE' }),
+  getSettings: (id: string) => request<WarriorSettings>(`/api/warriors/${id}/settings`),
+  updateSettings: (id: string, input: UpdateWarriorSettingsInput) =>
+    request<ControlAccepted>(`/api/warriors/${id}/settings`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    }),
 };
 
 /** Parse one `host[:port]` line into a create payload. Returns null for blank lines. */
