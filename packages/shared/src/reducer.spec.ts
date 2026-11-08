@@ -298,6 +298,62 @@ describe('project lifecycle events', () => {
     ).toBe(false);
   });
 
+  it('keeps running items through a project change whose refresh lists none', () => {
+    const s = connected();
+    expect(s.items).toHaveLength(3);
+    applyEvent(
+      s,
+      { event_name: 'item.complete', message: { pipeline_id: 1, item_id: s.items[0]!.id } },
+      T0 + 1,
+    );
+    applyEvent(
+      s,
+      {
+        event_name: 'project.refresh',
+        message: {
+          status: 'running',
+          items: [],
+          project: { project_id: 2, title: 'Telegram', project_html: '', utc_deadline: null },
+        },
+      },
+      T0 + 2,
+    );
+    expect(s.project?.name).toBe('telegram');
+    // The two unfinished items stay; the completed one is dropped with the old list.
+    expect(s.items.map((i) => i.status)).toEqual(['running', 'running']);
+    applyEvent(
+      s,
+      { event_name: 'item.complete', message: { pipeline_id: 1, item_id: s.items[0]!.id } },
+      T0 + 3,
+    );
+    expect(s.counters.completed).toBe(2);
+    // A refresh that does list items is authoritative, as on a fresh connection.
+    applyEvent(
+      s,
+      {
+        event_name: 'project.refresh',
+        message: {
+          status: 'running',
+          items: [
+            {
+              id: 'n1',
+              name: 'n1',
+              number: 9,
+              status: 'running',
+              tasks: [],
+              output: '',
+              project: 'telegram',
+              start_time: 1,
+            },
+          ],
+          project: { project_id: 2, title: 'Telegram', project_html: '', utc_deadline: null },
+        },
+      },
+      T0 + 4,
+    );
+    expect(s.items.map((i) => i.id)).toEqual(['n1']);
+  });
+
   it('keeps a running item when a refresh reports it finished', () => {
     const s = createSnapshot(record, T0);
     applyEvent(

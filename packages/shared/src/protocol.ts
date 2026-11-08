@@ -51,3 +51,34 @@ export interface UpdateWarriorInput {
   port?: number;
   enabled?: boolean;
 }
+
+/** The warrior's own settings, read from its settings page. `null` when a value could not be read. */
+export interface WarriorSettings {
+  /** tracker nickname (`downloader`) */
+  downloader: string | null;
+  /** items worked on at once (`concurrent_items`, 1 to 6) */
+  concurrentItems: number | null;
+}
+
+export interface SelectProjectInput {
+  /** catalog key of the project, as listed in the warrior's own catalog */
+  name: string;
+}
+
+export interface UpdateWarriorSettingsInput {
+  downloader?: string;
+  concurrentItems?: number;
+}
+
+export type WarriorControlCommand = 'select_project' | 'deselect_project' | 'update_settings';
+
+/**
+ * Answer to a control request. The warrior acknowledges before it acts, so this only says the
+ * request was accepted; the outcome arrives over /ws as the warrior's own events.
+ */
+export interface ControlAccepted {
+  id: string;
+  command: WarriorControlCommand;
+  /** ISO 8601 */
+  acceptedAt: string;
+}
