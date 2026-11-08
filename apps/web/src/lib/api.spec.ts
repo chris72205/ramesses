@@ -65,3 +65,27 @@ describe('api client', () => {
     await expect(api.listWarriors()).rejects.toMatchObject({ status: 500, message: 'Boom' });
   });
 });
+
+describe('project endpoints', () => {
+  const fetchMock = vi.fn();
+  beforeEach(() => vi.stubGlobal('fetch', fetchMock));
+  afterEach(() => {
+    fetchMock.mockReset();
+    vi.unstubAllGlobals();
+  });
+
+  it('builds the project URLs and methods', async () => {
+    fetchMock.mockImplementation(() => Promise.resolve(respond(200, {})));
+    await api.listProjects();
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/projects');
+    await api.listProjects(true);
+    expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/projects?includeHidden=true');
+    await api.getProject('a b');
+    expect(fetchMock.mock.calls[2]?.[0]).toBe('/api/projects/a%20b');
+    await api.getProjectHistory('blogger', '7d');
+    expect(fetchMock.mock.calls[3]?.[0]).toBe('/api/projects/blogger/history?range=7d');
+    fetchMock.mockResolvedValueOnce(respond(202, { requested: true }));
+    expect(await api.refreshProjects()).toEqual({ requested: true });
+    expect(fetchMock.mock.calls[4]?.[1]).toMatchObject({ method: 'POST' });
+  });
+});

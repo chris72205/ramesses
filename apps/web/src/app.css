@@ -21,3 +21,9 @@
   --viz-down: #3987e5;
   --viz-up: #d95926;
 }
+
+/* Project charts: completion rate takes slot 1, queue depth slot 2 (the same validated pair). */
+:root {
+  --viz-done: var(--viz-down);
+  --viz-todo: var(--viz-up);
+}

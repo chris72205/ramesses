@@ -1,4 +1,13 @@
-import type { CreateWarriorInput, UpdateWarriorInput, WarriorRecord } from '@ramesses/shared';
+import type {
+  CreateWarriorInput,
+  HistoryRange,
+  ProjectDetail,
+  ProjectHistory,
+  ProjectSummary,
+  RefreshResult,
+  UpdateWarriorInput,
+  WarriorRecord,
+} from '@ramesses/shared';
 
 export class ApiError extends Error {
   constructor(
@@ -40,6 +49,12 @@ export const api = {
   updateWarrior: (id: string, input: UpdateWarriorInput) =>
     request<WarriorRecord>(`/api/warriors/${id}`, { method: 'PATCH', body: JSON.stringify(input) }),
   deleteWarrior: (id: string) => request<void>(`/api/warriors/${id}`, { method: 'DELETE' }),
+  listProjects: (includeHidden = false) =>
+    request<ProjectSummary[]>(`/api/projects${includeHidden ? '?includeHidden=true' : ''}`),
+  getProject: (name: string) => request<ProjectDetail>(`/api/projects/${encodeURIComponent(name)}`),
+  getProjectHistory: (name: string, range: HistoryRange) =>
+    request<ProjectHistory>(`/api/projects/${encodeURIComponent(name)}/history?range=${range}`),
+  refreshProjects: () => request<RefreshResult>('/api/projects/refresh', { method: 'POST' }),
 };
 
 /** Parse one `host[:port]` line into a create payload. Returns null for blank lines. */

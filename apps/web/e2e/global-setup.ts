@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BACKEND_PORT } from '../playwright.config';
+import { FakeTracker } from '../../server/test/support/fake-tracker';
 import { FakeWarrior } from '../../server/test/support/fake-warrior';
 import {
   ensureTestDatabase,
@@ -14,6 +15,7 @@ const serverDir = path.resolve(here, '../../server');
 
 let backend: ChildProcess | undefined;
 let fakeWarrior: FakeWarrior | undefined;
+let fakeTracker: FakeTracker | undefined;
 
 async function waitFor(url: string, timeoutMs: number): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -40,6 +42,8 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
 
   fakeWarrior = await new FakeWarrior({ tickMs: 250 }).start();
   process.env.FAKE_WARRIOR_PORT = String(fakeWarrior.port);
+  // The backend samples this stand-in tracker as soon as it elects itself leader.
+  fakeTracker = await new FakeTracker().start();
 
   backend = spawn('pnpm', ['exec', 'nest', 'start'], {
     cwd: serverDir,
@@ -52,6 +56,12 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
       REDIS_URL: process.env.REDIS_URL ?? 'redis://localhost:6380',
       LOG_LEVEL: 'warn',
       WEB_DIST: '',
+      REDIS_KEY_PREFIX: `ramesses-pw-${process.pid}`,
+      LEADER_RENEW_MS: '200',
+      LEADER_TTL_MS: '1000',
+      PROJECTS_SAMPLING_ENABLED: 'true',
+      TRACKER_PROJECTS_URL: fakeTracker.projectsUrl,
+      TRACKER_STATS_URL_TEMPLATE: fakeTracker.statsUrlTemplate,
     },
   });
   await waitFor(`http://localhost:${BACKEND_PORT}/api/health/live`, 90_000);
@@ -59,5 +69,6 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   return async () => {
     backend?.kill('SIGTERM');
     await fakeWarrior?.stop();
+    await fakeTracker?.stop();
   };
 }

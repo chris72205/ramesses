@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { isActiveLink, Router } from 'sv-router';
   import type { WarriorRecord } from '@ramesses/shared';
   import { api } from './lib/api';
   import { fleet } from './lib/fleet.svelte';
-  import Dashboard from './components/Dashboard.svelte';
+  import { p } from './lib/router';
   import SetupView from './components/SetupView.svelte';
   import SocketBadge from './components/SocketBadge.svelte';
   import WarriorsModal from './components/WarriorsModal.svelte';
@@ -32,9 +33,34 @@
 
 <div class="min-h-screen bg-base-200">
   <header class="navbar sticky top-0 z-30 bg-base-100/95 backdrop-blur shadow-sm px-4">
-    <div class="flex-1 gap-3">
-      <span class="text-xl font-semibold tracking-tight">Ramesses</span>
-      <span class="text-sm text-base-content/60 hidden sm:inline">Archive Team Warrior fleet</span>
+    <div class="flex-1 items-center gap-4">
+      <div class="flex items-baseline gap-3">
+        <span class="text-xl font-semibold tracking-tight">Ramesses</span>
+        <span class="text-sm text-base-content/60 hidden md:inline">Archive Team Warrior fleet</span
+        >
+      </div>
+      {#if !setupActive}
+        <nav aria-label="Sections">
+          <div role="tablist" class="tabs tabs-border tabs-sm">
+            <a
+              role="tab"
+              class="tab"
+              href={p('/')}
+              {@attach isActiveLink({ className: 'tab-active' })}
+            >
+              Dashboard
+            </a>
+            <a
+              role="tab"
+              class="tab"
+              href={p('/projects')}
+              {@attach isActiveLink({ className: 'tab-active', startsWith: true })}
+            >
+              Projects
+            </a>
+          </div>
+        </nav>
+      {/if}
     </div>
     <div class="flex items-center gap-3">
       <SocketBadge state={fleet.socket} />
@@ -59,7 +85,7 @@
     {:else if setupActive}
       <SetupView {records} onchange={() => void refresh()} ondone={() => (setupActive = false)} />
     {:else}
-      <Dashboard />
+      <Router />
     {/if}
   </main>
 

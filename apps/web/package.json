@@ -12,22 +12,23 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@ramesses/shared": "workspace:*"
+    "@ramesses/shared": "workspace:*",
+    "sv-router": "^0.19.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tailwindcss/vite": "^4.3.4",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/svelte": "^5.4.2",
+    "@vitest/coverage-v8": "^5.1.0",
     "daisyui": "^5.7.50",
+    "jsdom": "^31.0.0",
     "svelte": "^5.57.3",
     "svelte-check": "^4.3.0",
     "tailwindcss": "^4.3.4",
     "typescript": "~6.0.3",
     "vite": "^8.3.6",
-    "vitest": "^5.1.0",
-    "@playwright/test": "^1.65.0",
-    "@testing-library/jest-dom": "^7.0.1",
-    "@testing-library/svelte": "^5.4.2",
-    "@vitest/coverage-v8": "^5.1.0",
-    "jsdom": "^31.0.0"
+    "vitest": "^5.1.0"
   }
 }

@@ -9,6 +9,9 @@ const mocks = vi.hoisted(() => ({
   createWarrior: vi.fn(),
   updateWarrior: vi.fn(),
   deleteWarrior: vi.fn(),
+  listProjects: vi.fn(),
+  getProjectHistory: vi.fn(),
+  refreshProjects: vi.fn(),
 }));
 vi.mock('./lib/api', async (importOriginal) => {
   const original = await importOriginal<typeof ApiModule>();
@@ -83,5 +86,39 @@ describe('App', () => {
       await screen.findByText(/Could not reach the backend: ECONNREFUSED/),
     ).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument());
+  });
+
+  it('routes to the projects page and back, and shows a not-found page', async () => {
+    mocks.listWarriors.mockResolvedValue([
+      { id: 'w1', name: 'one', host: 'h', port: 8001, enabled: true, createdAt: '', updatedAt: '' },
+    ]);
+    mocks.listProjects.mockResolvedValue([]);
+    history.pushState({}, '', '/projects');
+    try {
+      render(App);
+      expect(await screen.findByRole('heading', { name: 'Projects' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Projects' })).toHaveClass('tab-active');
+      expect(screen.getByRole('tab', { name: 'Dashboard' })).not.toHaveClass('tab-active');
+      expect(await screen.findByText(/No projects yet/)).toBeInTheDocument();
+    } finally {
+      history.pushState({}, '', '/');
+    }
+  });
+
+  it('renders the not-found page for unknown paths', async () => {
+    mocks.listWarriors.mockResolvedValue([
+      { id: 'w1', name: 'one', host: 'h', port: 8001, enabled: true, createdAt: '', updatedAt: '' },
+    ]);
+    history.pushState({}, '', '/nowhere/at/all');
+    try {
+      render(App);
+      expect(await screen.findByRole('heading', { name: 'Page not found' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Back to the dashboard' })).toHaveAttribute(
+        'href',
+        '/',
+      );
+    } finally {
+      history.pushState({}, '', '/');
+    }
   });
 });

@@ -79,7 +79,17 @@
         {/if}
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2">
-            <span class="font-medium truncate">{warrior.project.title}</span>
+            {#if warrior.project.name}
+              <!-- A plain href: the router intercepts it, and importing the router here would
+                   create a cycle (router -> Dashboard -> WarriorCard -> router). -->
+              <a
+                class="link link-hover font-medium truncate"
+                href="/projects/{encodeURIComponent(warrior.project.name)}"
+                title="Open the project page">{warrior.project.title}</a
+              >
+            {:else}
+              <span class="font-medium truncate">{warrior.project.title}</span>
+            {/if}
             {#if warrior.runnerStatus === 'stopping'}
               <span class="badge badge-xs badge-warning">stopping</span>
             {/if}

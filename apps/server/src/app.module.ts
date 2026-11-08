@@ -7,6 +7,7 @@ import { DatabaseModule } from './database/database.module';
 import { FleetModule } from './fleet/fleet.module';
 import { HealthModule } from './health/health.module';
 import { LeaderModule } from './leader/leader.module';
+import { NotFoundController } from './not-found.controller';
 import { ProjectsModule } from './projects/projects.module';
 import { RedisModule } from './redis/redis.module';
 import { WarriorsModule } from './warriors/warriors.module';
@@ -27,7 +28,14 @@ const isProduction = env.NODE_ENV === 'production';
       },
     }),
     ...(env.WEB_DIST
-      ? [ServeStaticModule.forRoot({ rootPath: env.WEB_DIST, exclude: ['/api/{*path}', '/ws'] })]
+      ? [
+          ServeStaticModule.forRoot({
+            rootPath: env.WEB_DIST,
+            // Serve index.html for client-side routes such as /projects/:name instead of a 404.
+            // The Fastify loader ignores `exclude`; NotFoundController keeps /api answers JSON.
+            serveStaticOptions: { fallthrough: true },
+          }),
+        ]
       : []),
     DatabaseModule,
     RedisModule,
@@ -37,5 +45,6 @@ const isProduction = env.NODE_ENV === 'production';
     FleetModule,
     ProjectsModule,
   ],
+  controllers: [NotFoundController],
 })
 export class AppModule {}

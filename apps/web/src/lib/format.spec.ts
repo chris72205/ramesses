@@ -45,3 +45,33 @@ describe('formatClock', () => {
     expect(formatClock(new Date(2026, 0, 1, 0, 0, 0).getTime())).toBe('00:00:00');
   });
 });
+
+describe('project formatters', () => {
+  it('compacts counts past five digits', async () => {
+    const { formatCount, formatPerHour } = await import('./format');
+    expect(formatCount(0)).toBe('0');
+    expect(formatCount(1284)).toBe('1,284');
+    expect(formatCount(9999)).toBe('9,999');
+    expect(formatCount(12_900)).toBe('12.9K');
+    expect(formatCount(437_000)).toBe('437K');
+    expect(formatCount(4_200_000)).toBe('4.20M');
+    expect(formatCount(28_054_009_556)).toBe('28.1B');
+    expect(formatCount(2.3e12)).toBe('2.30T');
+    expect(formatCount(null)).toBe('—');
+    expect(formatCount(Number.NaN)).toBe('—');
+    expect(formatPerHour(null)).toBe('—');
+    expect(formatPerHour(437_000)).toBe('437K/h');
+  });
+
+  it('formats deadlines and ISO ages', async () => {
+    const { formatTimeLeft, formatIsoAgo, formatDateTime } = await import('./format');
+    const now = Date.parse('2026-11-07T12:00:00Z');
+    expect(formatTimeLeft(null, now)).toBeNull();
+    expect(formatTimeLeft('garbage', now)).toBeNull();
+    expect(formatTimeLeft('2026-11-07T11:00:00Z', now)).toBe('closed');
+    expect(formatTimeLeft('2026-11-10T16:00:00Z', now)).toBe('3d 4h left');
+    expect(formatIsoAgo(null, now)).toBe('never');
+    expect(formatIsoAgo('2026-11-07T11:59:30Z', now)).toBe('30s ago');
+    expect(formatDateTime('2026-11-07T12:00:00Z')).toMatch(/Nov 7/);
+  });
+});

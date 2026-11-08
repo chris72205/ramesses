@@ -19,6 +19,9 @@ export default defineConfig({
     include: ['src/**/*.spec.ts'],
     environment: 'jsdom',
     setupFiles: ['src/test-setup.ts'],
+    // sv-router ships .svelte sources; inline it so the Svelte plugin compiles them in tests
+    // whichever directory Vitest is started from.
+    server: { deps: { inline: ['sv-router'] } },
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,svelte}'],

@@ -51,3 +51,55 @@ export function formatClock(at: number): string {
     .map((part) => String(part).padStart(2, '0'))
     .join(':');
 }
+
+/** 1284 -> "1,284", 12900 -> "12.9K", 28_054_000_000 -> "28.1B". Compact once past five digits. */
+export function formatCount(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '\u2014';
+  const abs = Math.abs(value);
+  if (abs < 10_000) return Math.round(value).toLocaleString('en-US');
+  const units: Array<[number, string]> = [
+    [1e12, 'T'],
+    [1e9, 'B'],
+    [1e6, 'M'],
+    [1e3, 'K'],
+  ];
+  for (const [size, suffix] of units) {
+    if (abs >= size) {
+      const scaled = value / size;
+      return `${scaled.toFixed(Math.abs(scaled) < 10 ? 2 : Math.abs(scaled) < 100 ? 1 : 0)}${suffix}`;
+    }
+  }
+  return String(value);
+}
+
+/** Items per hour, or an em dash when there is no rate yet. */
+export function formatPerHour(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '\u2014';
+  return `${formatCount(value)}/h`;
+}
+
+/** Time left until an ISO deadline: "3d 4h left", "closed" once it has passed. */
+export function formatTimeLeft(deadline: string | null, now: number): string | null {
+  if (!deadline) return null;
+  const at = Date.parse(deadline);
+  if (!Number.isFinite(at)) return null;
+  if (at <= now) return 'closed';
+  return `${formatDuration((at - now) / 1000)} left`;
+}
+
+/** ISO timestamp -> local "Nov 7, 14:05". */
+export function formatDateTime(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+}
+
+/** ISO timestamp (or null) -> "12s ago" / "never". */
+export function formatIsoAgo(iso: string | null, now: number): string {
+  return formatAgo(iso ? Date.parse(iso) : null, now);
+}

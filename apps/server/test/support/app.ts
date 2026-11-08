@@ -21,8 +21,9 @@ export async function bootTestApp(
   process.env.LEADER_TTL_MS ??= '1000';
   // Tests that want the sampler turn it on and point it at a fake tracker.
   process.env.PROJECTS_SAMPLING_ENABLED ??= 'false';
-  Object.assign(process.env, env);
+  // Tests serve no static app unless they pass WEB_DIST themselves.
   delete process.env.WEB_DIST;
+  Object.assign(process.env, env);
   // Clear leftovers before the app boots so FleetService starts from an empty list.
   await truncateAll(databaseUrl);
   const { createApp } = await import('../../src/app.js');

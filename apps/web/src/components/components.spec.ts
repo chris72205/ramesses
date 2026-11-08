@@ -175,7 +175,10 @@ describe('WarriorCard', () => {
     expect(hostLink).toHaveAttribute('href', 'http://192.0.2.10:8002/');
     expect(hostLink).toHaveAttribute('target', '_blank');
     expect(screen.getByText('Working on a project')).toBeInTheDocument();
-    expect(screen.getByText('Telegram')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Telegram' })).toHaveAttribute(
+      'href',
+      '/projects/telegram',
+    );
     expect(screen.getByRole('link', { name: 'Leaderboard' })).toHaveAttribute(
       'href',
       'https://example.org/lb',
@@ -207,6 +210,15 @@ describe('WarriorCard', () => {
   it('explains a disabled warrior', () => {
     render(WarriorCard, { warrior: { ...warrior, enabled: false }, now: NOW });
     expect(screen.getByText(/Disabled\. Enable it/)).toBeInTheDocument();
+  });
+
+  it('shows the project title as plain text when it is not in the catalog', () => {
+    render(WarriorCard, {
+      warrior: { ...warrior, project: { ...warrior.project!, name: null } },
+      now: NOW,
+    });
+    expect(screen.getByText('Telegram')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Telegram' })).not.toBeInTheDocument();
   });
 
   it('shows "No project selected" for an idle connected warrior', () => {
