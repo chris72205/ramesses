@@ -23,7 +23,7 @@ docker compose up -d          # Postgres on 5433, Redis on 6380
 pnpm dev                      # backend on :3000, web on :5173
 ```
 
-Open http://localhost:5173. On first run you are asked for your warriors' addresses (`host[:port]`, port defaults to 8001). The list is stored in Postgres and can be changed later from **Manage warriors**. API docs: http://localhost:3000/api/docs.
+Open http://localhost:5173. On first run you are asked for your warriors' addresses (`host[:port]`, port defaults to 8001). The list is stored in Postgres and can be changed later under **Settings**. API docs: http://localhost:3000/api/docs.
 
 Migrations run automatically at boot. To run them by hand: `pnpm --filter @ramesses/server migration:run`.
 

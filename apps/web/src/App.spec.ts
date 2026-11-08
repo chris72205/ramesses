@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ServerMessage } from '@ramesses/shared';
 import App from './App.svelte';
 import type * as ApiModule from './lib/api';
+import { warriors } from './lib/warriors.svelte';
 
 const mocks = vi.hoisted(() => ({
   listWarriors: vi.fn(),
@@ -52,8 +53,9 @@ const totals = {
 describe('App', () => {
   beforeEach(() => {
     vi.stubGlobal('WebSocket', FakeWebSocket);
-    HTMLDialogElement.prototype.showModal = vi.fn();
-    HTMLDialogElement.prototype.close = vi.fn();
+    // The warrior list is a module-level store; start each test before the first load.
+    warriors.records = null;
+    warriors.error = null;
   });
   afterEach(() => {
     vi.unstubAllGlobals();
@@ -64,7 +66,7 @@ describe('App', () => {
     mocks.listWarriors.mockResolvedValueOnce([]);
     render(App);
     expect(await screen.findByRole('heading', { name: 'Add your warriors' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Manage warriors' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Settings' })).not.toBeInTheDocument();
   });
 
   it('shows the dashboard when warriors exist and renders pushed state', async () => {
@@ -72,7 +74,7 @@ describe('App', () => {
       { id: 'w1', name: 'one', host: 'h', port: 8001, enabled: true, createdAt: '', updatedAt: '' },
     ]);
     render(App);
-    expect(await screen.findByRole('button', { name: 'Manage warriors' })).toBeInTheDocument();
+    expect(await screen.findByRole('tab', { name: 'Settings' })).toBeInTheDocument();
     FakeWebSocket.last!.onopen?.();
     FakeWebSocket.last!.push({ type: 'hello', warriors: [], fleet: totals, projects: [] });
     expect(await screen.findByText(/No warriors yet/)).toBeInTheDocument();
@@ -117,6 +119,22 @@ describe('App', () => {
         'href',
         '/',
       );
+    } finally {
+      history.pushState({}, '', '/');
+    }
+  });
+
+  it('routes to the settings page, which manages the warrior list', async () => {
+    mocks.listWarriors.mockResolvedValue([
+      { id: 'w1', name: 'one', host: 'h', port: 8001, enabled: true, createdAt: '', updatedAt: '' },
+    ]);
+    history.pushState({}, '', '/settings');
+    try {
+      render(App);
+      expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: 'Settings' })).toHaveClass('tab-active');
+      expect(await screen.findByRole('cell', { name: 'one' })).toBeInTheDocument();
+      expect(screen.getByLabelText('Enabled')).toBeChecked();
     } finally {
       history.pushState({}, '', '/');
     }

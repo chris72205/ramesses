@@ -22,7 +22,7 @@
         <h1 class="card-title text-2xl">Add your warriors</h1>
         <p class="text-base-content/70">
           Enter the address of each Archive Team Warrior's web interface. The port defaults to 8001.
-          You can change this list later from <strong>Manage warriors</strong>.
+          You can change this list later under <strong>Settings</strong>.
         </p>
       </div>
       <AddWarriorsForm onadded={onchange} />

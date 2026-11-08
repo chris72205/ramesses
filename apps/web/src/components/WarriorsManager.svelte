@@ -3,22 +3,9 @@
   import { api } from '../lib/api';
   import AddWarriorsForm from './AddWarriorsForm.svelte';
 
-  let {
-    open,
-    records,
-    onclose,
-    onchange,
-  }: { open: boolean; records: WarriorRecord[]; onclose: () => void; onchange: () => void } =
-    $props();
+  let { records, onchange }: { records: WarriorRecord[]; onchange: () => void } = $props();
 
-  let dialog: HTMLDialogElement | undefined = $state();
   let error = $state<string | null>(null);
-
-  $effect(() => {
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  });
 
   async function run(action: () => Promise<unknown>): Promise<void> {
     error = null;
@@ -31,16 +18,9 @@
   }
 </script>
 
-<dialog bind:this={dialog} class="modal" {onclose}>
-  <div class="modal-box max-w-2xl space-y-4">
-    <div class="flex items-center justify-between">
-      <h3 class="text-lg font-semibold">Manage warriors</h3>
-      <form method="dialog">
-        <button class="btn btn-sm btn-circle btn-ghost" aria-label="Close">✕</button>
-      </form>
-    </div>
-
-    {#if records.length}
+<div class="space-y-4">
+  {#if records.length}
+    <div class="overflow-x-auto">
       <table class="table table-sm">
         <thead>
           <tr><th>Name</th><th>Address</th><th>Enabled</th><th></th></tr>
@@ -74,16 +54,15 @@
           {/each}
         </tbody>
       </table>
-    {:else}
-      <p class="text-sm text-base-content/60">No warriors configured.</p>
-    {/if}
+    </div>
+  {:else}
+    <p class="text-sm text-base-content/60">No warriors configured.</p>
+  {/if}
 
-    {#if error}
-      <div role="alert" class="alert alert-error text-sm"><span>{error}</span></div>
-    {/if}
+  {#if error}
+    <div role="alert" class="alert alert-error text-sm"><span>{error}</span></div>
+  {/if}
 
-    <div class="divider my-0">Add</div>
-    <AddWarriorsForm onadded={onchange} />
-  </div>
-  <form method="dialog" class="modal-backdrop"><button>close</button></form>
-</dialog>
+  <div class="divider my-0">Add</div>
+  <AddWarriorsForm onadded={onchange} />
+</div>

@@ -1,34 +1,30 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { isActiveLink, Router } from 'sv-router';
-  import type { WarriorRecord } from '@ramesses/shared';
-  import { api } from './lib/api';
   import { fleet } from './lib/fleet.svelte';
   import { p } from './lib/router';
+  import { warriors } from './lib/warriors.svelte';
   import SetupView from './components/SetupView.svelte';
   import SocketBadge from './components/SocketBadge.svelte';
-  import WarriorsModal from './components/WarriorsModal.svelte';
 
-  let records = $state<WarriorRecord[] | null>(null);
-  let loadError = $state<string | null>(null);
+  /** First-run setup takes over the whole page until at least one warrior exists. */
   let setupActive = $state(false);
-  let manageOpen = $state(false);
 
-  async function refresh(): Promise<void> {
-    try {
-      records = await api.listWarriors();
-      loadError = null;
-      if (records.length === 0) setupActive = true;
-    } catch (error) {
-      loadError = error instanceof Error ? error.message : String(error);
-    }
-  }
+  $effect(() => {
+    if (warriors.records?.length === 0) setupActive = true;
+  });
 
   onMount(() => {
     fleet.start();
-    void refresh();
+    void warriors.load();
     return () => fleet.stop();
   });
+
+  const TABS = [
+    { href: p('/'), label: 'Dashboard', startsWith: false },
+    { href: p('/projects'), label: 'Projects', startsWith: true },
+    { href: p('/settings'), label: 'Settings', startsWith: true },
+  ];
 </script>
 
 <div class="min-h-screen bg-base-200">
@@ -42,57 +38,43 @@
       {#if !setupActive}
         <nav aria-label="Sections">
           <div role="tablist" class="tabs tabs-border tabs-sm">
-            <a
-              role="tab"
-              class="tab"
-              href={p('/')}
-              {@attach isActiveLink({ className: 'tab-active' })}
-            >
-              Dashboard
-            </a>
-            <a
-              role="tab"
-              class="tab"
-              href={p('/projects')}
-              {@attach isActiveLink({ className: 'tab-active', startsWith: true })}
-            >
-              Projects
-            </a>
+            {#each TABS as tab (tab.href)}
+              <a
+                role="tab"
+                class="tab"
+                href={tab.href}
+                {@attach isActiveLink({ className: 'tab-active', startsWith: tab.startsWith })}
+              >
+                {tab.label}
+              </a>
+            {/each}
           </div>
         </nav>
       {/if}
     </div>
     <div class="flex items-center gap-3">
       <SocketBadge state={fleet.socket} />
-      {#if !setupActive}
-        <button class="btn btn-sm btn-outline" onclick={() => (manageOpen = true)}>
-          Manage warriors
-        </button>
-      {/if}
     </div>
   </header>
 
   <main class="mx-auto max-w-screen-2xl p-4 space-y-4">
-    {#if loadError}
+    {#if warriors.error}
       <div role="alert" class="alert alert-error">
-        <span>Could not reach the backend: {loadError}</span>
-        <button class="btn btn-sm" onclick={() => void refresh()}>Retry</button>
+        <span>Could not reach the backend: {warriors.error}</span>
+        <button class="btn btn-sm" onclick={() => void warriors.load()}>Retry</button>
       </div>
-    {:else if records === null}
+    {:else if warriors.records === null}
       <div class="flex justify-center py-24">
         <span class="loading loading-spinner loading-lg"></span>
       </div>
     {:else if setupActive}
-      <SetupView {records} onchange={() => void refresh()} ondone={() => (setupActive = false)} />
+      <SetupView
+        records={warriors.records}
+        onchange={() => void warriors.load()}
+        ondone={() => (setupActive = false)}
+      />
     {:else}
       <Router />
     {/if}
   </main>
-
-  <WarriorsModal
-    open={manageOpen}
-    records={records ?? []}
-    onclose={() => (manageOpen = false)}
-    onchange={() => void refresh()}
-  />
 </div>

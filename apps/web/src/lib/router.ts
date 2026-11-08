@@ -12,5 +12,6 @@ export const { p, navigate, isActive, route } = createRouter({
   '/': Dashboard,
   '/projects': () => import('../components/ProjectsPage.svelte'),
   '/projects/:name': () => import('../components/ProjectDetailPage.svelte'),
+  '/settings': () => import('../components/SettingsPage.svelte'),
   '*': NotFound,
 });

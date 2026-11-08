@@ -6,7 +6,7 @@ import type * as ApiModule from '../lib/api';
 import AddWarriorsForm from './AddWarriorsForm.svelte';
 import SetupView from './SetupView.svelte';
 import SocketBadge from './SocketBadge.svelte';
-import WarriorsModal from './WarriorsModal.svelte';
+import WarriorsManager from './WarriorsManager.svelte';
 
 const mocks = vi.hoisted(() => ({
   createWarrior: vi.fn(),
@@ -103,20 +103,10 @@ describe('SetupView', () => {
   });
 });
 
-describe('WarriorsModal', () => {
-  beforeEach(() => {
-    // jsdom does not implement <dialog> methods.
-    HTMLDialogElement.prototype.showModal = vi.fn(function (this: HTMLDialogElement) {
-      this.setAttribute('open', '');
-    });
-    HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
-      this.removeAttribute('open');
-    });
-  });
-
+describe('WarriorsManager', () => {
   it('toggles and deletes warriors through the API', async () => {
     const onchange = vi.fn();
-    render(WarriorsModal, { open: true, records: [record('1')], onclose: vi.fn(), onchange });
+    render(WarriorsManager, { records: [record('1')], onchange });
     expect(screen.getByText('w-1')).toBeInTheDocument();
     await fireEvent.click(screen.getByLabelText('Enabled'));
     await waitFor(() => expect(mocks.updateWarrior).toHaveBeenCalledWith('1', { enabled: false }));
@@ -127,15 +117,11 @@ describe('WarriorsModal', () => {
 
   it('shows API errors and an empty state', async () => {
     mocks.deleteWarrior.mockRejectedValueOnce(new Error('nope'));
-    render(WarriorsModal, {
-      open: true,
-      records: [record('1')],
-      onclose: vi.fn(),
-      onchange: vi.fn(),
-    });
+    const first = render(WarriorsManager, { records: [record('1')], onchange: vi.fn() });
     await fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(await screen.findByText('nope')).toBeInTheDocument();
-    render(WarriorsModal, { open: false, records: [], onclose: vi.fn(), onchange: vi.fn() });
+    first.unmount();
+    render(WarriorsManager, { records: [], onchange: vi.fn() });
     expect(screen.getByText('No warriors configured.')).toBeInTheDocument();
   });
 });

@@ -33,21 +33,26 @@ test('first run asks for warriors, then shows them live on the dashboard', async
   await expect(card.locator('pre').first()).toContainText(/Starting|Finished|Received/);
 });
 
-test('warriors can be disabled and removed from the manage modal', async ({ page }) => {
+test('warriors can be disabled and removed from the settings page', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Manage warriors' }).click();
-  const dialog = page.getByRole('dialog');
+  await page.getByRole('tab', { name: 'Settings' }).click();
+  await expect(page).toHaveURL(/\/settings$/);
+  const settings = page.locator('main');
+  await expect(settings.getByRole('heading', { name: 'Warriors' })).toBeVisible();
   // The unnamed warrior's name defaults to its address, so match the row rather than the text.
-  await expect(dialog.getByRole('row').filter({ hasText: fakeWarrior() })).toBeVisible();
+  await expect(settings.getByRole('row').filter({ hasText: fakeWarrior() })).toBeVisible();
 
-  await dialog.getByLabel('Enabled').uncheck();
+  await settings.getByLabel('Enabled').uncheck();
+  await expect(settings.getByLabel('Enabled')).not.toBeChecked();
+  await page.getByRole('tab', { name: 'Dashboard' }).click();
   await expect(page.locator('article').first().getByText('Disabled', { exact: true })).toBeVisible({
     timeout: 10_000,
   });
 
-  await dialog.getByRole('button', { name: 'Delete' }).click();
-  await expect(dialog.getByText('No warriors configured.')).toBeVisible();
-  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+  // A deep link to settings survives a reload.
+  await page.goto('/settings');
+  await expect(settings.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  await settings.getByRole('button', { name: 'Delete' }).click();
   // With no warriors left the app returns to first-run setup.
   await expect(page.getByRole('heading', { name: 'Add your warriors' })).toBeVisible();
 });
