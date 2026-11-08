@@ -41,7 +41,7 @@ describe('SettingsPage', () => {
     render(SettingsPage);
     expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Warriors' })).toBeInTheDocument();
-    expect(screen.getByRole('cell', { name: 'alpha' })).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: /^alpha\b/ })).toBeInTheDocument();
     await fireEvent.click(screen.getByLabelText('Enabled'));
     await waitFor(() => expect(mocks.listWarriors).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.getByLabelText('Enabled')).not.toBeChecked());
@@ -53,6 +53,6 @@ describe('SettingsPage', () => {
     render(SettingsPage);
     expect(screen.getByRole('alert')).toHaveTextContent(/Could not load warriors: ECONNREFUSED/);
     await fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
-    expect(await screen.findByRole('cell', { name: 'alpha' })).toBeInTheDocument();
+    expect(await screen.findByRole('cell', { name: /^alpha\b/ })).toBeInTheDocument();
   });
 });

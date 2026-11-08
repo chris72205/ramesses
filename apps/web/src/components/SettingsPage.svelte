@@ -9,7 +9,7 @@
   <div class="card bg-base-100 shadow-sm">
     <div class="card-body gap-4 p-4 sm:p-6">
       <div>
-        <h2 class="text-lg font-medium">Warriors</h2>
+        <h2 class="card-title text-base">Warriors</h2>
         <p class="text-sm text-base-content/60">
           The Archive Team Warrior instances Ramesses connects to. Disable one to stop collecting
           from it without forgetting it.
