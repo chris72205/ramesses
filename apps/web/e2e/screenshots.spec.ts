@@ -119,6 +119,12 @@ test('card actions: menu, project picker, and the pending line', async ({ page }
   await dialog.getByRole('button', { name: 'Switch project' }).click();
   await capture(page, 'dashboard-pending', () => expect(idle.getByRole('status')).toBeVisible());
 
+  await page.getByRole('button', { name: 'Stop all…' }).click();
+  await capture(page, 'dialog-stop-all', () =>
+    expect(page.getByRole('dialog', { name: 'Stop all warriors' })).toBeVisible(),
+  );
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+
   const busy = cards.filter({ hasText: 'warrior-busy' });
   await busy.getByRole('button', { name: /^Actions for/ }).click();
   await busy.getByRole('menuitem', { name: 'Settings…' }).click();
