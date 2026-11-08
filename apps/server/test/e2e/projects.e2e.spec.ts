@@ -1,6 +1,13 @@
+import type { AddressInfo } from 'node:net';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
+import { WebSocket } from 'ws';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { ProjectHistory, ProjectSummary, RefreshResult } from '@ramesses/shared';
+import type {
+  ProjectHistory,
+  ProjectSummary,
+  RefreshResult,
+  ServerMessage,
+} from '@ramesses/shared';
 import { bootTestApp } from '../support/app';
 import { FakeTracker } from '../support/fake-tracker';
 
@@ -21,9 +28,11 @@ beforeAll(async () => {
   tracker = await new FakeTracker().start();
   ({ app } = await bootTestApp({
     PROJECTS_SAMPLING_ENABLED: 'true',
+    PROJECTS_REFRESH_MIN_SEC: '0',
     TRACKER_PROJECTS_URL: tracker.projectsUrl,
     TRACKER_STATS_URL_TEMPLATE: tracker.statsUrlTemplate,
   }));
+  await app.listen(0, '127.0.0.1');
 });
 
 afterAll(async () => {
@@ -78,17 +87,68 @@ describe('projects end to end', () => {
     const missing = await app!.inject({ method: 'GET', url: '/api/projects/nope' });
     expect(missing.statusCode).toBe(404);
 
-    // The run just happened, so a manual refresh is throttled.
+    // With the throttle set to zero, a manual refresh runs straight away.
     const refresh = await app!.inject({ method: 'POST', url: '/api/projects/refresh' });
     expect(refresh.statusCode).toBe(202);
     const result = refresh.json<RefreshResult>();
-    expect(result.requested).toBe(false);
+    expect(result.requested).toBe(true);
     expect(result.lastRunAt).not.toBeNull();
-    expect(new Date(result.nextAllowedAt!).getTime()).toBeGreaterThan(Date.now());
 
     const hidden = await app!.inject({ method: 'GET', url: '/api/projects?includeHidden=true' });
     expect(hidden.json<ProjectSummary[]>().length).toBeGreaterThanOrEqual(summaries.length);
     const badQuery = await app!.inject({ method: 'GET', url: '/api/projects?includeHidden=maybe' });
     expect(badQuery.statusCode).toBe(400);
+  });
+
+  it('puts the catalog in hello and pushes a projects message after each sample run', async () => {
+    const { port } = app!.getHttpServer().address() as AddressInfo;
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`);
+    const messages: ServerMessage[] = [];
+    const waitFor = <T extends ServerMessage>(
+      test: (m: ServerMessage) => m is T,
+      timeoutMs = 10_000,
+    ) =>
+      new Promise<T>((resolve, reject) => {
+        const found = messages.find(test);
+        if (found) return resolve(found);
+        const timer = setTimeout(
+          () => reject(new Error('timed out waiting for message')),
+          timeoutMs,
+        );
+        const onMessage = (data: unknown) => {
+          const message = JSON.parse(String(data)) as ServerMessage;
+          if (test(message)) {
+            clearTimeout(timer);
+            ws.off('message', onMessage);
+            resolve(message);
+          }
+        };
+        ws.on('message', onMessage);
+      });
+    ws.on('message', (data) => messages.push(JSON.parse(String(data)) as ServerMessage));
+    await new Promise<void>((resolve, reject) => {
+      ws.once('open', resolve);
+      ws.once('error', reject);
+    });
+    try {
+      const hello = await waitFor(
+        (m): m is Extract<ServerMessage, { type: 'hello' }> => m.type === 'hello',
+      );
+      expect(hello.projects.map((p) => p.name)).toContain('blogger');
+      expect(hello.projects.find((p) => p.name === 'blogger')?.latest).not.toBeNull();
+
+      tracker!.advance('blogger', { done: 500 });
+      const refresh = await app!.inject({ method: 'POST', url: '/api/projects/refresh' });
+      expect(refresh.json<RefreshResult>().requested).toBe(true);
+      const pushed = await waitFor(
+        (m): m is Extract<ServerMessage, { type: 'projects' }> =>
+          m.type === 'projects' &&
+          m.projects.find((p) => p.name === 'blogger')?.latest?.done ===
+            tracker!.counts.get('blogger')!.done,
+      );
+      expect(pushed.projects.length).toBeGreaterThan(1);
+    } finally {
+      ws.close();
+    }
   });
 });

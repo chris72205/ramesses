@@ -35,6 +35,9 @@ test('the Projects tab lists sampled projects and links to a detail page', async
       .getByText(/Stats unavailable/),
   ).toBeVisible();
   await expect(table.getByText('★ Recommended by Archive Team')).toBeVisible();
+  // The fake warrior runs uploader.jp, so that row counts one of our warriors.
+  const uploader = table.getByRole('row').filter({ hasText: 'uploader.jp' });
+  await expect(uploader.getByTitle(fakeWarrior())).toHaveText('1', { timeout: 15_000 });
 
   await blogger.getByRole('link', { name: 'Blogger' }).click();
   await expect(page).toHaveURL(/\/projects\/blogger$/);
@@ -44,6 +47,12 @@ test('the Projects tab lists sampled projects and links to a detail page', async
 
   await page.getByRole('tab', { name: '7 days' }).click();
   await expect(page.getByText(/hourly points? over the last 7 days/)).toBeVisible();
+  await expect(page.getByText(/None of your warriors/)).toBeVisible();
+
+  await page.goto('/projects/uploaderjp');
+  const mine = page.getByRole('region', { name: /Your warriors on this project/ });
+  await expect(mine.getByRole('link', { name: fakeWarrior() })).toBeVisible({ timeout: 15_000 });
+  await expect(mine.getByText('connected')).toBeVisible();
 });
 
 test('a detail URL survives a reload and the tabs switch back', async ({ page }) => {

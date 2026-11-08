@@ -1,4 +1,4 @@
-import type { ProjectSummary } from '@ramesses/shared';
+import { createSnapshot, type ProjectSummary, type WarriorSnapshot } from '@ramesses/shared';
 
 const NOW = Date.parse('2026-11-07T12:00:00Z');
 const iso = (minutesAgo: number) => new Date(NOW - minutesAgo * 60_000).toISOString();
@@ -94,3 +94,18 @@ export const catalog: ProjectSummary[] = [
     trend: [],
   }),
 ];
+
+/** A connected warrior working on `project` (a catalog key), for the fleet store in page tests. */
+export function warriorOn(id: string, project: string, name = id): WarriorSnapshot {
+  const snapshot = createSnapshot({ id, name, host: 'h', port: 8001, enabled: true }, NOW);
+  snapshot.connection.state = 'connected';
+  snapshot.status = 'RUNNING_PROJECT';
+  snapshot.project = {
+    title: project,
+    name: project,
+    logo: null,
+    leaderboard: null,
+    deadline: null,
+  };
+  return snapshot;
+}

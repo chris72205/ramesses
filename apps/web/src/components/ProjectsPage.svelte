@@ -12,10 +12,12 @@
   } from '../lib/format';
   import { projects } from '../lib/projects.svelte';
   import { p } from '../lib/router';
+  import { groupWarriorsByProject } from '../lib/warriors-by-project';
   import HealthBadge from './HealthBadge.svelte';
   import Sparkline from './Sparkline.svelte';
 
-  type SortKey = 'title' | 'health' | 'todo' | 'out' | 'h1' | 'h24' | 'deadline' | 'sampled';
+  type SortKey =
+    'title' | 'warriors' | 'health' | 'todo' | 'out' | 'h1' | 'h24' | 'deadline' | 'sampled';
   const HEALTH_RANK: Record<QueueHealth, number> = {
     backlog: 4,
     healthy: 3,
@@ -25,6 +27,12 @@
   };
   const COLUMNS: Array<{ key: SortKey; label: string; numeric: boolean; title?: string }> = [
     { key: 'title', label: 'Project', numeric: false },
+    {
+      key: 'warriors',
+      label: 'Warriors',
+      numeric: true,
+      title: 'Your warriors working on this project right now',
+    },
     {
       key: 'health',
       label: 'Queue',
@@ -52,10 +60,14 @@
   let sortKey = $state<SortKey>('h24');
   let sortDir = $state<'asc' | 'desc'>('desc');
 
+  const warriorsByProject = $derived(groupWarriorsByProject(fleet.list));
+
   function sortValue(project: ProjectSummary, key: SortKey): number | string | null {
     switch (key) {
       case 'title':
         return project.title.toLowerCase();
+      case 'warriors':
+        return warriorsByProject.get(project.name)?.length ?? 0;
       case 'health':
         return HEALTH_RANK[project.health];
       case 'todo':
@@ -103,8 +115,7 @@
     try {
       const result = await api.refreshProjects();
       if (result.requested) {
-        refreshNote = 'Refresh requested. New numbers arrive in a few seconds.';
-        setTimeout(() => void projects.load(), 15_000);
+        refreshNote = 'Refresh requested. New numbers arrive here as soon as the sample finishes.';
       } else {
         const sampled = `Sampled ${formatIsoAgo(result.lastRunAt, Date.now())}.`;
         refreshNote = result.nextAllowedAt
@@ -198,6 +209,7 @@
           <tbody>
             {#each rows as project (project.name)}
               {@const timeLeft = formatTimeLeft(project.deadline, fleet.now)}
+              {@const mine = warriorsByProject.get(project.name) ?? []}
               <tr class={project.active ? '' : 'opacity-60'}>
                 <td>
                   <div class="flex items-center gap-3">
@@ -233,6 +245,16 @@
                       </div>
                     </div>
                   </div>
+                </td>
+                <td
+                  class="text-right font-mono tabular-nums"
+                  title={mine.length ? mine.map((w) => w.name).join(', ') : undefined}
+                >
+                  {#if mine.length}
+                    {mine.length}
+                  {:else}
+                    <span class="text-base-content/40">&mdash;</span>
+                  {/if}
                 </td>
                 {#if project.tracker !== 'universal'}
                   <td colspan="5" class="text-sm text-base-content/50">

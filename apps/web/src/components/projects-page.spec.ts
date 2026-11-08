@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { catalog, FIXTURE_NOW, summary } from '../test/project-fixtures';
+import { catalog, FIXTURE_NOW, summary, warriorOn } from '../test/project-fixtures';
 import { fleet } from '../lib/fleet.svelte';
 import type * as ApiModule from '../lib/api';
 import { projects } from '../lib/projects.svelte';
@@ -28,6 +28,7 @@ describe('ProjectsPage', () => {
     projects.error = null;
     projects.includeHidden = false;
     fleet.now = FIXTURE_NOW; // deadlines and ages in the fixtures are relative to this instant
+    fleet.warriors = {};
     mocks.listProjects.mockResolvedValue(catalog);
   });
   afterEach(() => {
@@ -147,5 +148,25 @@ describe('ProjectsPage', () => {
     expect(rowNames()[0]).toBe('telegram');
     await fireEvent.click(screen.getByRole('button', { name: /Done\/h \(1 h\)/ }));
     expect(rowNames()[0]).toBe('blogger');
+  });
+
+  it('counts your warriors per project from the live fleet and sorts by it', async () => {
+    fleet.warriors = {
+      a: warriorOn('a', 'telegram', 'alpha'),
+      b: warriorOn('b', 'telegram', 'beta'),
+      c: warriorOn('c', 'blogger', 'gamma'),
+    };
+    render(ProjectsPage);
+    await screen.findByRole('link', { name: 'Blogger' });
+    const telegramRow = screen
+      .getAllByRole('row')
+      .find((row) => within(row).queryByRole('link', { name: 'Telegram' }))!;
+    expect(within(telegramRow).getByTitle('alpha, beta')).toHaveTextContent('2');
+    await fireEvent.click(screen.getByRole('button', { name: 'Warriors' }));
+    expect(rowNames().slice(0, 2)).toEqual(['telegram', 'blogger']);
+    fleet.warriors = {};
+    await waitFor(() =>
+      expect(within(telegramRow).queryByTitle('alpha, beta')).not.toBeInTheDocument(),
+    );
   });
 });

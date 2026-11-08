@@ -5,6 +5,7 @@ import type { Env } from '../config/env';
 import { LeaderModule } from '../leader/leader.module';
 import { RedisModule } from '../redis/redis.module';
 import { ProjectStat } from './project-stat.entity';
+import { ProjectsFeed } from './projects-feed.service';
 import { Project } from './project.entity';
 import { ProjectsSampler } from './projects-sampler.service';
 import { ProjectsScheduler } from './projects-scheduler.service';
@@ -28,7 +29,8 @@ import { HttpTrackerClient, TRACKER_CLIENT } from './tracker/tracker-client';
     ProjectsSampler,
     ProjectsScheduler,
     ProjectsService,
+    ProjectsFeed,
   ],
-  exports: [ProjectsService, ProjectsScheduler],
+  exports: [ProjectsService, ProjectsScheduler, ProjectsFeed],
 })
 export class ProjectsModule {}

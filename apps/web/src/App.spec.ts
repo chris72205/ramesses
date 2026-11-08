@@ -74,7 +74,7 @@ describe('App', () => {
     render(App);
     expect(await screen.findByRole('button', { name: 'Manage warriors' })).toBeInTheDocument();
     FakeWebSocket.last!.onopen?.();
-    FakeWebSocket.last!.push({ type: 'hello', warriors: [], fleet: totals });
+    FakeWebSocket.last!.push({ type: 'hello', warriors: [], fleet: totals, projects: [] });
     expect(await screen.findByText(/No warriors yet/)).toBeInTheDocument();
     expect(screen.getByText('Live')).toBeInTheDocument();
   });

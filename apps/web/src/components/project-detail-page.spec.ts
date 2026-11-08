@@ -1,7 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ProjectHistory } from '@ramesses/shared';
-import { catalog, FIXTURE_NOW, summary } from '../test/project-fixtures';
+import { catalog, FIXTURE_NOW, summary, warriorOn } from '../test/project-fixtures';
 import type * as ApiModule from '../lib/api';
 import { fleet } from '../lib/fleet.svelte';
 import { projects } from '../lib/projects.svelte';
@@ -45,6 +45,7 @@ describe('ProjectDetailPage', () => {
     projects.error = null;
     mocks.params.name = 'blogger';
     fleet.now = FIXTURE_NOW;
+    fleet.warriors = {};
     mocks.listProjects.mockResolvedValue(catalog);
     mocks.getProjectHistory.mockImplementation((_name: string, range: ProjectHistory['range']) =>
       Promise.resolve(history(range)),
@@ -151,5 +152,24 @@ describe('ProjectDetailPage', () => {
     expect(screen.queryByRole('link', { name: 'Leaderboard' })).not.toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Repository' })).not.toBeInTheDocument();
     expect(screen.queryByRole('img', { name: '' })).not.toBeInTheDocument();
+  });
+
+  it('lists your warriors on the project with their state', async () => {
+    const offline = warriorOn('o', 'blogger', 'omega');
+    offline.connection.state = 'offline';
+    fleet.warriors = {
+      a: warriorOn('a', 'blogger', 'alpha'),
+      o: offline,
+      t: warriorOn('t', 'telegram'),
+    };
+    render(ProjectDetailPage);
+    const section = await screen.findByRole('region', { name: /Your warriors on this project/ });
+    expect(section).toHaveTextContent('(2)');
+    expect(within(section).getByRole('link', { name: 'alpha' })).toHaveAttribute('href', '/');
+    expect(within(section).getAllByText('Working on a project')).toHaveLength(2);
+    expect(within(section).getByText('offline')).toBeInTheDocument();
+    expect(within(section).getByText('connected')).toBeInTheDocument();
+    fleet.warriors = {};
+    expect(await screen.findByText(/None of your warriors/)).toBeInTheDocument();
   });
 });

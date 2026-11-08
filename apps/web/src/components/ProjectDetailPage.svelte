@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { HistoryRange, ProjectHistory } from '@ramesses/shared';
+  import { WARRIOR_STATUS_TEXT, type HistoryRange, type ProjectHistory } from '@ramesses/shared';
   import { api } from '../lib/api';
   import { fleet } from '../lib/fleet.svelte';
   import {
@@ -12,6 +12,7 @@
   } from '../lib/format';
   import { projects } from '../lib/projects.svelte';
   import { p, route } from '../lib/router';
+  import { groupWarriorsByProject } from '../lib/warriors-by-project';
   import HealthBadge from './HealthBadge.svelte';
   import HistoryChart from './HistoryChart.svelte';
 
@@ -24,6 +25,7 @@
   const name = $derived(route.params.name ?? '');
   const project = $derived(projects.byName.get(name) ?? null);
   const timeLeft = $derived(project ? formatTimeLeft(project.deadline, fleet.now) : null);
+  const mine = $derived(groupWarriorsByProject(fleet.list).get(name) ?? []);
 
   let range = $state<HistoryRange>('24h');
   let history = $state<ProjectHistory | null>(null);
@@ -151,6 +153,39 @@
         </div>
       </div>
     </header>
+
+    <section class="card bg-base-100 shadow-sm" aria-labelledby="your-warriors">
+      <div class="card-body gap-2 p-4">
+        <h2 id="your-warriors" class="font-medium">
+          Your warriors on this project
+          <span class="text-base-content/50">({mine.length})</span>
+        </h2>
+        {#if mine.length === 0}
+          <p class="text-sm text-base-content/60">
+            None of your warriors is working on it right now.
+          </p>
+        {:else}
+          <ul class="divide-y divide-base-200 text-sm">
+            {#each mine as warrior (warrior.id)}
+              <li class="flex flex-wrap items-center justify-between gap-2 py-1.5">
+                <a class="link link-hover font-medium" href={p('/')}>{warrior.name}</a>
+                <span class="flex items-center gap-2 text-base-content/70">
+                  {#if warrior.status}<span>{WARRIOR_STATUS_TEXT[warrior.status]}</span>{/if}
+                  <span class="font-mono tabular-nums">{warrior.runningItems} running</span>
+                  <span
+                    class="badge badge-xs {warrior.connected
+                      ? 'badge-success badge-soft'
+                      : 'badge-ghost'}"
+                  >
+                    {warrior.connected ? 'connected' : 'offline'}
+                  </span>
+                </span>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+    </section>
 
     {#if project.tracker !== 'universal'}
       <div class="card bg-base-100 shadow-sm">

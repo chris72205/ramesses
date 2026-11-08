@@ -6,9 +6,10 @@ import {
 } from '@nestjs/websockets';
 import type { WebSocket } from 'ws';
 import type { ServerMessage } from '@ramesses/shared';
+import { ProjectsFeed } from '../projects/projects-feed.service';
 import { FleetService } from './fleet.service';
 
-/** Pushes fleet state to browser clients over a plain WebSocket at /ws. */
+/** Pushes fleet state and the project catalog to browser clients over a plain WebSocket at /ws. */
 @WebSocketGateway({ path: '/ws' })
 export class FleetGateway
   implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit, OnModuleDestroy
@@ -16,15 +17,23 @@ export class FleetGateway
   private readonly logger = new Logger(FleetGateway.name);
   private readonly clients = new Set<WebSocket>();
   private unsubscribe: (() => void) | null = null;
+  private unsubscribeProjects: (() => void) | null = null;
 
-  constructor(private readonly fleet: FleetService) {}
+  constructor(
+    private readonly fleet: FleetService,
+    private readonly projects: ProjectsFeed,
+  ) {}
 
   public onModuleInit(): void {
     this.unsubscribe = this.fleet.subscribe((message) => this.broadcast(message));
+    this.unsubscribeProjects = this.projects.subscribe((projects) =>
+      this.broadcast({ type: 'projects', projects }),
+    );
   }
 
   public onModuleDestroy(): void {
     this.unsubscribe?.();
+    this.unsubscribeProjects?.();
     for (const client of this.clients) client.close(1001, 'server shutting down');
     this.clients.clear();
   }
@@ -35,6 +44,7 @@ export class FleetGateway
       type: 'hello',
       warriors: this.fleet.snapshots(),
       fleet: this.fleet.totals(),
+      projects: this.projects.current,
     });
     this.logger.debug(`client connected (${this.clients.size} total)`);
   }

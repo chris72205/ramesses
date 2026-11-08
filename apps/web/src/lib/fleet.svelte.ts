@@ -5,6 +5,7 @@ import {
   type ServerMessage,
   type WarriorSnapshot,
 } from '@ramesses/shared';
+import { projects } from './projects.svelte';
 
 export type SocketState = 'connecting' | 'open' | 'reconnecting';
 
@@ -113,6 +114,7 @@ export class FleetStore {
         for (const warrior of message.warriors) next[warrior.id] = warrior;
         this.warriors = next;
         this.totals = message.fleet;
+        projects.replace(message.projects);
         this.ready = true;
         break;
       }
@@ -140,6 +142,9 @@ export class FleetStore {
         break;
       case 'fleet':
         this.totals = message.fleet;
+        break;
+      case 'projects':
+        projects.replace(message.projects);
         break;
     }
   }

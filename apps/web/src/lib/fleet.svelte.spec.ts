@@ -96,6 +96,7 @@ describe('FleetStore', () => {
       type: 'hello',
       warriors: [snapshot('b', 'Bravo'), snapshot('a', 'alpha')],
       fleet: totals,
+      projects: [],
     });
     expect(store.ready).toBe(true);
     expect(store.list.map((w) => w.name)).toEqual(['alpha', 'Bravo']);
@@ -115,7 +116,7 @@ describe('FleetStore', () => {
     store.start();
     const ws = FakeWebSocket.instances[0]!;
     ws.open();
-    ws.push({ type: 'hello', warriors: [snapshot('a')], fleet: totals });
+    ws.push({ type: 'hello', warriors: [snapshot('a')], fleet: totals, projects: [] });
 
     const bandwidth = (at: number): TimedEvent => ({
       at,
@@ -240,6 +241,7 @@ describe('FleetStore', () => {
       type: 'hello',
       warriors: [{ ...snapshot('a'), items: [running, done] }],
       fleet: totals,
+      projects: [],
     });
     vi.advanceTimersByTime(1000);
     expect(store.warriors['a']!.items.map((i) => i.id)).toEqual(['i1', 'i2']);
@@ -280,5 +282,26 @@ describe('FleetStore', () => {
     store.start();
     vi.advanceTimersByTime(1000);
     expect(store.now).toBe(1_001_000);
+  });
+});
+
+describe('project catalog over the socket', () => {
+  it('fills the projects store from hello and from projects messages', async () => {
+    const { projects } = await import('./projects.svelte');
+    const { catalog } = await import('../test/project-fixtures');
+    projects.items = [];
+    projects.loadedAt = null;
+    vi.stubGlobal('WebSocket', FakeWebSocket);
+    const store = new FleetStore();
+    store.start();
+    const ws = FakeWebSocket.instances[FakeWebSocket.instances.length - 1]!;
+    ws.open();
+    ws.push({ type: 'hello', warriors: [], fleet: totals, projects: [catalog[0]!] });
+    expect(projects.items.map((p) => p.name)).toEqual(['blogger']);
+    expect(projects.loadedAt).not.toBeNull();
+    ws.push({ type: 'projects', projects: catalog });
+    expect(projects.items).toHaveLength(catalog.length);
+    store.stop();
+    vi.unstubAllGlobals();
   });
 });

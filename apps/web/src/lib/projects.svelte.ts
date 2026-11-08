@@ -3,8 +3,9 @@ import type { ProjectSummary } from '@ramesses/shared';
 import { api } from './api';
 
 /**
- * Project catalog with the latest tracker numbers. Loaded over REST for now; the `/ws` push
- * replaces the fetch in the next phase, through the same `replace()` entry point.
+ * Project catalog with the latest tracker numbers. The `/ws` channel fills it: the full catalog
+ * arrives in `hello` and again in a `projects` message after every tracker sample. The REST load
+ * is the fallback for a page opened before the socket has delivered anything.
  */
 export class ProjectsStore {
   items = $state<ProjectSummary[]>([]);
@@ -40,7 +41,7 @@ export class ProjectsStore {
     }
   }
 
-  /** Swap in a full catalog, from a fetch now and from the push channel later. */
+  /** Swap in a full catalog, from the push channel or from the REST fallback. */
   public replace(items: ProjectSummary[]): void {
     this.items = items;
     this.loadedAt = Date.now();
