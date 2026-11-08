@@ -35,7 +35,7 @@ describe('warrior controls end to end', () => {
       if (command !== 'select-project') return;
       const name = fields['project_name']!;
       setTimeout(() => {
-        fake.emit({ event_name: 'warrior.project_selected', message: { project: { name } } });
+        fake.emit({ event_name: 'warrior.project_selected', message: { project: name } });
         fake.emit({ event_name: 'warrior.status', message: { status: 'STARTING_PROJECT' } });
       }, 50);
       setTimeout(

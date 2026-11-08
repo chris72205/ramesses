@@ -119,7 +119,7 @@ export class FakeWarrior {
       if (command === 'select-project') {
         const name = fields['project_name']!;
         const title = projects[name]?.title ?? name;
-        this.emit({ event_name: 'warrior.project_selected', message: { project: { name } } });
+        this.emit({ event_name: 'warrior.project_selected', message: { project: name } });
         this.emit({ event_name: 'warrior.status', message: { status: 'STARTING_PROJECT' } });
         setTimeout(() => {
           this.emit({
@@ -133,6 +133,7 @@ export class FakeWarrior {
           this.emit({ event_name: 'warrior.status', message: { status: 'RUNNING_PROJECT' } });
         }, delayMs).unref();
       } else if (command === 'deselect-project') {
+        this.emit({ event_name: 'warrior.project_selected', message: { project: null } });
         this.emit({ event_name: 'warrior.status', message: { status: 'STOPPING_PROJECT' } });
         setTimeout(() => {
           this.emit({

@@ -220,10 +220,15 @@ describe('project lifecycle events', () => {
     expect(
       applyEvent(
         s,
-        { event_name: 'warrior.project_selected', message: { project: { name: 'telegram' } } },
+        { event_name: 'warrior.project_selected', message: { project: 'telegram' } },
         T0,
       ),
     ).toBe(true);
+    expect(s.project?.title).toBe('Telegram');
+    // A deselect announces null; the status and refresh that follow carry the real change.
+    expect(
+      applyEvent(s, { event_name: 'warrior.project_selected', message: { project: null } }, T0),
+    ).toBe(false);
     expect(s.project?.title).toBe('Telegram');
     expect(
       applyEvent(

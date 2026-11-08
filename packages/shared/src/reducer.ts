@@ -10,6 +10,11 @@ export const LOG_TAIL_LINES = 40;
 export const BANDWIDTH_HISTORY = 90;
 /** Finished items linger this long before being dropped, like the stock UI. */
 export const FINISHED_ITEM_TTL_MS = 15_000;
+/**
+ * A connected warrior that has sent nothing for this long is shown as quiet: its IO loop is busy
+ * (some project tasks block it for half a minute), which is not the same as a dead socket.
+ */
+export const QUIET_AFTER_MS = 10_000;
 
 export function createSnapshot(
   record: Pick<WarriorRecord, 'id' | 'name' | 'host' | 'port' | 'enabled'>,
@@ -123,7 +128,9 @@ export function applyEvent(snapshot: WarriorSnapshot, event: WarriorEvent, now: 
     case 'warrior.project_selected':
     case 'warrior.project_installing':
     case 'warrior.project_installed': {
-      const name = event.message?.project?.name;
+      // `project_selected` carries the catalog key itself; the install events carry the entry.
+      const project = event.message?.project;
+      const name = typeof project === 'string' ? project : project?.name;
       const catalogEntry = name ? snapshot.catalog[name] : undefined;
       if (catalogEntry) {
         snapshot.project = catalogToProject(catalogEntry, snapshot.project?.deadline ?? null);
