@@ -31,7 +31,21 @@
   const span = $derived(formatWindow(history.length * 1000));
 </script>
 
-<div class="relative min-w-0">
+<!-- The caption sits in its own row above the plot so it never covers a spike. -->
+<div class="min-w-0">
+  <div class="flex h-4 items-center justify-end text-[10px] leading-none whitespace-nowrap">
+    {#if sample}
+      <span class="font-mono tabular-nums">
+        <span class="text-base-content/60">{formatClock(sample.at)}</span>
+        <span style="color: var(--viz-down)">↓</span>
+        {formatRate(sample.receiving)}
+        <span style="color: var(--viz-up)">↑</span>
+        {formatRate(sample.sending)}
+      </span>
+    {:else if history.length > 1}
+      <span class="text-base-content/50">last {span}</span>
+    {/if}
+  </div>
   <svg
     viewBox="0 0 {W} {H}"
     preserveAspectRatio="none"
@@ -79,21 +93,4 @@
       />
     {/if}
   </svg>
-  {#if sample}
-    <div
-      class="pointer-events-none absolute -top-1 right-0 rounded bg-base-300 px-2 py-1 text-[11px] font-mono tabular-nums shadow"
-    >
-      <span class="text-base-content/60">{formatClock(sample.at)}</span>
-      <span style="color: var(--viz-down)">↓</span>
-      {formatRate(sample.receiving)}
-      <span style="color: var(--viz-up)">↑</span>
-      {formatRate(sample.sending)}
-    </div>
-  {:else if history.length > 1}
-    <div
-      class="pointer-events-none absolute -top-1 right-0 rounded bg-base-100/80 px-1 text-[10px] text-base-content/50"
-    >
-      last {span}
-    </div>
-  {/if}
 </div>

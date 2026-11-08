@@ -115,6 +115,19 @@ describe('WarriorsManager', () => {
     expect(onchange).toHaveBeenCalledTimes(2);
   });
 
+  it('repeats the address under the name only when the name differs', () => {
+    const first = render(WarriorsManager, { records: [record('1')], onchange: vi.fn() });
+    // Named warrior: the address appears in its own column and again in the phone-only line.
+    expect(screen.getAllByText('10.0.0.1:8001')).toHaveLength(2);
+    first.unmount();
+    render(WarriorsManager, {
+      records: [record('2', { name: '10.0.0.1:8001' })],
+      onchange: vi.fn(),
+    });
+    // Unnamed warrior: name cell plus the address column, no third copy.
+    expect(screen.getAllByText('10.0.0.1:8001')).toHaveLength(2);
+  });
+
   it('shows API errors and an empty state', async () => {
     mocks.deleteWarrior.mockRejectedValueOnce(new Error('nope'));
     const first = render(WarriorsManager, { records: [record('1')], onchange: vi.fn() });

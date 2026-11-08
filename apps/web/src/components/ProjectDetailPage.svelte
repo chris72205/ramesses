@@ -80,7 +80,7 @@
   {:else if !project}
     <div class="card bg-base-100 shadow-sm">
       <div class="card-body items-center text-center gap-2">
-        <h1 class="card-title">Project not found</h1>
+        <h1 class="card-title text-base">Project not found</h1>
         <p class="text-sm text-base-content/60">
           No project named <code>{name}</code> is in the catalog.
         </p>
@@ -156,7 +156,7 @@
 
     <section class="card bg-base-100 shadow-sm" aria-labelledby="your-warriors">
       <div class="card-body gap-2 p-4">
-        <h2 id="your-warriors" class="font-medium">
+        <h2 id="your-warriors" class="card-title text-base">
           Your warriors on this project
           <span class="text-base-content/50">({mine.length})</span>
         </h2>
@@ -239,7 +239,7 @@
       <div class="card bg-base-100 shadow-sm">
         <div class="card-body gap-4 p-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <h2 class="flex items-center gap-2 font-medium">
+            <h2 class="card-title text-base">
               History
               {#if history && historyLoading}
                 <span

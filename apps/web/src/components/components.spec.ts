@@ -221,6 +221,21 @@ describe('WarriorCard', () => {
     expect(screen.queryByRole('link', { name: 'Telegram' })).not.toBeInTheDocument();
   });
 
+  it('labels the link by purpose when the warrior is only named by its address', () => {
+    render(WarriorCard, { warrior: { ...warrior, name: '192.0.2.10:8002' }, now: NOW });
+    expect(screen.getByRole('heading', { name: '192.0.2.10:8002' })).toBeInTheDocument();
+    const hostLink = screen.getByRole('link', { name: /Open warrior interface/ });
+    expect(hostLink).toHaveAttribute('href', 'http://192.0.2.10:8002/');
+    expect(screen.queryAllByText('192.0.2.10:8002')).toHaveLength(1);
+  });
+
+  it('says when a live project has no items in flight', () => {
+    render(WarriorCard, { warrior: { ...warrior, items: [] }, now: NOW });
+    expect(screen.getByText('No items in flight.')).toBeInTheDocument();
+    render(WarriorCard, { warrior, now: NOW });
+    expect(screen.getAllByText('No items in flight.')).toHaveLength(1);
+  });
+
   it('shows "No project selected" for an idle connected warrior', () => {
     render(WarriorCard, {
       warrior: { ...warrior, project: null, items: [], status: 'NO_PROJECT' },
