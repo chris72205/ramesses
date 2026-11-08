@@ -16,8 +16,13 @@ export const BACKOFF_INITIAL_MS = 1_000;
 export const BACKOFF_MAX_MS = 30_000;
 /** A connection that stayed open this long resets the backoff. */
 export const HEALTHY_AFTER_MS = 60_000;
-/** The warrior sends a `timestamp` every second; silence this long means the socket is dead. */
-export const WATCHDOG_MS = 10_000;
+/**
+ * The warrior sends a `timestamp` every second, but a project task that blocks its IO loop (the
+ * YouTube pipeline sleeps 20 to 30 s per cookie fetch) silences everything for that long while the
+ * socket is fine. Only silence this long is treated as a dead socket; the UI shows the quiet
+ * stretch in the meantime.
+ */
+export const WATCHDOG_MS = 60_000;
 export const PRUNE_INTERVAL_MS = 5_000;
 
 export type WarriorConnectionRecord = Pick<
@@ -54,7 +59,7 @@ export interface WarriorConnectionEvents {
 
 /**
  * Owns one warrior's SockJS session and its live snapshot. Reconnects with jittered
- * exponential backoff and treats ten seconds of silence as a dead socket.
+ * exponential backoff and treats a minute of silence as a dead socket.
  */
 export class WarriorConnection extends EventEmitter<WarriorConnectionEvents> {
   readonly snapshot: WarriorSnapshot;

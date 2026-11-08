@@ -18,6 +18,12 @@ import { parseSettingsFragment, toWarriorSettings } from './settings-fragment';
  * means here; the Docker container is left for the operator to handle.
  */
 
+/**
+ * A warrior answers a control in milliseconds unless a project task is blocking its IO loop; the
+ * YouTube pipeline sleeps 20 to 30 s per cookie fetch, so the wait outlasts one such stall.
+ */
+export const CONTROL_TIMEOUT_MS = 35_000;
+
 export interface WarriorAddress {
   host: string;
   port: number;
@@ -78,7 +84,7 @@ export class WarriorControlClient {
 
   constructor(options: WarriorControlClientOptions = {}) {
     this.fetchImpl = options.fetch ?? fetch;
-    this.timeoutMs = options.timeoutMs ?? 10_000;
+    this.timeoutMs = options.timeoutMs ?? CONTROL_TIMEOUT_MS;
     this.retryDelayMs = options.retryDelayMs ?? 500;
     this.userAgent = options.userAgent ?? CONTROL_USER_AGENT;
     this.credentials = options.credentials ?? (() => null);
