@@ -84,6 +84,19 @@ export class FleetService implements OnModuleInit, OnModuleDestroy {
     return [...this.connections.values()].map((c) => c.snapshot);
   }
 
+  /** The live snapshot of one tracked warrior, or undefined when it is not tracked. */
+  public snapshot(id: string): WarriorSnapshot | undefined {
+    return this.connections.get(id)?.snapshot;
+  }
+
+  /**
+   * Push a full snapshot of one warrior on the next flush. Used after a control request so
+   * browsers resync before the warrior's own events for the change start arriving.
+   */
+  public resync(id: string): void {
+    if (this.connections.has(id)) this.schedulePush(id, { kind: 'snapshot' });
+  }
+
   public totals(): FleetTotals {
     const snapshots = this.snapshots();
     const projects = new Set<string>();

@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { LoggerModule } from 'nestjs-pino';
 import { envSchema, loadEnv } from './config/env';
+import { ControlsModule } from './controls/controls.module';
 import { DatabaseModule } from './database/database.module';
 import { FleetModule } from './fleet/fleet.module';
 import { HealthModule } from './health/health.module';
@@ -43,6 +44,7 @@ const isProduction = env.NODE_ENV === 'production';
     HealthModule,
     WarriorsModule,
     FleetModule,
+    ControlsModule,
     ProjectsModule,
   ],
   controllers: [NotFoundController],

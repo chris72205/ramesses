@@ -80,7 +80,15 @@ export function applyEvent(snapshot: WarriorSnapshot, event: WarriorEvent, now: 
             snapshot.project,
           )
         : null;
-      snapshot.items = msg.items.map((item) => toItemSnapshot(item, now));
+      // The warrior lists its items only in the refresh it sends on connect. The refresh it
+      // broadcasts on a project change always carries an empty list, while items from the previous
+      // pipeline keep running until they finish on their own, so an empty list mid-session must
+      // not forget them: they still report their task status and completion.
+      const running = snapshot.items.filter((item) => item.status === 'running');
+      snapshot.items =
+        msg.items.length === 0 && running.length > 0
+          ? running
+          : msg.items.map((item) => toItemSnapshot(item, now));
       return touch(snapshot, now);
     }
     case 'warrior.projects_loaded': {
