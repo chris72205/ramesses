@@ -102,7 +102,7 @@
             <span class="font-mono text-sm text-base-content/60">{project.name}</span>
             {#if project.isAuto}
               <span
-                class="badge badge-sm badge-primary badge-soft"
+                class="badge badge-sm badge-primary badge-soft whitespace-nowrap"
                 title="ArchiveTeam's Choice: the tracker's own recommendation"
                 >★ Recommended by Archive Team</span
               >

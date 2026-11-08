@@ -34,7 +34,7 @@ test('the Projects tab lists sampled projects and links to a detail page', async
       .filter({ hasText: 'URLTeam 2' })
       .getByText(/Stats unavailable/),
   ).toBeVisible();
-  await expect(table.getByText('★ Recommended by Archive Team')).toBeVisible();
+  await expect(table.getByRole('img', { name: 'Recommended by Archive Team' })).toBeVisible();
   // The fake warrior runs uploader.jp, so that row counts one of our warriors.
   const uploader = table.getByRole('row').filter({ hasText: 'uploader.jp' });
   await expect(uploader.getByTitle(fakeWarrior())).toHaveText('1', { timeout: 15_000 });

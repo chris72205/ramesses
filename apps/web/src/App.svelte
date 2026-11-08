@@ -28,20 +28,29 @@
 </script>
 
 <div class="min-h-screen bg-base-200">
-  <header class="navbar sticky top-0 z-30 bg-base-100/95 backdrop-blur shadow-sm px-4">
-    <div class="flex-1 items-center gap-4">
-      <div class="flex items-baseline gap-3">
-        <span class="text-xl font-semibold tracking-tight">Ramesses</span>
-        <span class="text-sm text-base-content/60 hidden md:inline">Archive Team Warrior fleet</span
-        >
+  <!--
+    Two aligned rows: brand and the socket badge share a baseline, and the section tabs sit on
+    their own full-width row whose active underline meets the header's bottom edge. The inner
+    container matches <main>, so tabs line up with the page content at every width.
+  -->
+  <header class="sticky top-0 z-30 bg-base-100/95 shadow-sm backdrop-blur">
+    <div class="mx-auto max-w-screen-2xl px-4">
+      <div class="flex h-14 items-center justify-between gap-4">
+        <div class="flex min-w-0 items-baseline gap-3">
+          <span class="text-xl font-semibold tracking-tight">Ramesses</span>
+          <span class="hidden truncate text-sm text-base-content/60 sm:inline"
+            >Archive Team Warrior fleet</span
+          >
+        </div>
+        <SocketBadge state={fleet.socket} />
       </div>
       {#if !setupActive}
-        <nav aria-label="Sections">
-          <div role="tablist" class="tabs tabs-border tabs-sm">
+        <nav aria-label="Sections" class="-mb-px">
+          <div role="tablist" class="tabs tabs-border">
             {#each TABS as tab (tab.href)}
               <a
                 role="tab"
-                class="tab"
+                class="tab h-10 flex-1 px-4 sm:flex-none"
                 href={tab.href}
                 {@attach isActiveLink({ className: 'tab-active', startsWith: tab.startsWith })}
               >
@@ -51,9 +60,6 @@
           </div>
         </nav>
       {/if}
-    </div>
-    <div class="flex items-center gap-3">
-      <SocketBadge state={fleet.socket} />
     </div>
   </header>
 

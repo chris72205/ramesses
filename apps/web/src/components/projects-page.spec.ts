@@ -41,7 +41,7 @@ describe('ProjectsPage', () => {
     expect(await screen.findByRole('link', { name: 'Blogger' })).toBeInTheDocument();
     // blogger (450k/h) first, pastebin (30/h), telegram (0/h); missing rates sink to the bottom
     expect(rowNames()).toEqual(['blogger', 'pastebin', 'telegram', 'urlteam2']);
-    expect(screen.getByText('★ Recommended by Archive Team')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Recommended by Archive Team' })).toHaveTextContent('★');
     expect(screen.getByText(/Stats unavailable/)).toBeInTheDocument();
     expect(screen.getByText('3d 4h left')).toBeInTheDocument();
     expect(screen.getByText('450K/h')).toBeInTheDocument();

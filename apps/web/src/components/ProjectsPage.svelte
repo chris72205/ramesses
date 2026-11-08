@@ -224,21 +224,24 @@
                       <div class="h-8 w-8 shrink-0 rounded bg-base-200"></div>
                     {/if}
                     <div class="min-w-0">
-                      <a
-                        class="link link-hover font-medium"
-                        href={p('/projects/:name', { params: { name: project.name } })}
-                      >
-                        {project.title}
-                      </a>
-                      <div class="flex flex-wrap gap-1 text-xs text-base-content/60">
-                        <span class="font-mono">{project.name}</span>
+                      <div class="flex items-center gap-1.5">
+                        <a
+                          class="link link-hover font-medium"
+                          href={p('/projects/:name', { params: { name: project.name } })}
+                        >
+                          {project.title}
+                        </a>
                         {#if project.isAuto}
                           <span
-                            class="badge badge-xs badge-primary badge-soft"
-                            title="ArchiveTeam's Choice: the tracker's own recommendation"
-                            >★ Recommended by Archive Team</span
+                            class="text-primary"
+                            title="Recommended by Archive Team (ArchiveTeam's Choice)"
+                            aria-label="Recommended by Archive Team"
+                            role="img">★</span
                           >
                         {/if}
+                      </div>
+                      <div class="flex flex-wrap gap-1 text-xs text-base-content/60">
+                        <span class="font-mono">{project.name}</span>
                         {#if !project.active}
                           <span class="badge badge-xs badge-ghost">retired</span>
                         {/if}
