@@ -90,8 +90,7 @@
         class="textarea textarea-sm w-full font-mono"
         rows="4"
         bind:value={bulk}
-        placeholder="192.0.2.10:8001&#10;192.0.2.10:8002&#10;warrior-3.lan"
-      ></textarea>
+        placeholder="192.0.2.10:8001&#10;192.0.2.10:8002&#10;warrior-3.lan"></textarea>
     </label>
     <div>
       <button class="btn btn-sm" type="submit" disabled={busy || !bulk.trim()}>Add all</button>
