@@ -15,7 +15,7 @@ test('first run asks for warriors, then shows them live on the dashboard', async
   await expect(setup.getByText(`Added (1)`)).toBeVisible();
 
   await setup.getByRole('button', { name: 'Open dashboard' }).click();
-  await expect(page.getByText('Live')).toBeVisible();
+  await expect(page.getByText('Live', { exact: true })).toBeVisible();
 
   const card = page.locator('article').first();
   await expect(card.getByText('Connected')).toBeVisible({ timeout: 15_000 });

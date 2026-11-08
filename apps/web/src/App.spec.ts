@@ -133,7 +133,7 @@ describe('App', () => {
       render(App);
       expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: 'Settings' })).toHaveClass('tab-active');
-      expect(await screen.findByRole('cell', { name: 'one' })).toBeInTheDocument();
+      expect(await screen.findByRole('cell', { name: /^one\b/ })).toBeInTheDocument();
       expect(screen.getByLabelText('Enabled')).toBeChecked();
     } finally {
       history.pushState({}, '', '/');

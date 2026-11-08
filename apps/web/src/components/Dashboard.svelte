@@ -4,6 +4,11 @@
   import WarriorCard from './WarriorCard.svelte';
 </script>
 
+<header>
+  <h1 class="text-xl font-semibold tracking-tight">Dashboard</h1>
+  <p class="text-sm text-base-content/60">Live status and bandwidth of every warrior.</p>
+</header>
+
 <FleetSummary totals={fleet.totals} />
 
 {#if !fleet.ready}
@@ -11,7 +16,7 @@
 {:else if fleet.list.length === 0}
   <div class="card bg-base-100 shadow-sm">
     <div class="card-body items-center text-center">
-      <p>No warriors yet. Use <strong>Manage warriors</strong> to add some.</p>
+      <p>No warriors yet. Add some under <a class="link" href="/settings">Settings</a>.</p>
     </div>
   </div>
 {:else}

@@ -19,8 +19,8 @@
   <div class="card bg-base-100 shadow-sm">
     <div class="card-body gap-4">
       <div>
-        <h1 class="card-title text-2xl">Add your warriors</h1>
-        <p class="text-base-content/70">
+        <h1 class="text-xl font-semibold tracking-tight">Add your warriors</h1>
+        <p class="text-sm text-base-content/60">
           Enter the address of each Archive Team Warrior's web interface. The port defaults to 8001.
           You can change this list later under <strong>Settings</strong>.
         </p>
@@ -36,12 +36,15 @@
         <ul class="divide-y divide-base-200">
           {#each records as record (record.id)}
             <li class="flex items-center justify-between gap-2 py-2 text-sm">
-              <span
-                ><strong>{record.name}</strong>
-                <span class="font-mono text-base-content/60">{record.host}:{record.port}</span
-                ></span
-              >
-              <button class="btn btn-ghost btn-xs" onclick={() => void remove(record.id)}
+              <span class="flex min-w-0 items-baseline gap-2">
+                <strong class="truncate" title={record.name}>{record.name}</strong>
+                {#if record.name !== `${record.host}:${record.port}`}
+                  <span class="shrink-0 font-mono text-xs text-base-content/60"
+                    >{record.host}:{record.port}</span
+                  >
+                {/if}
+              </span>
+              <button class="btn btn-ghost btn-xs shrink-0" onclick={() => void remove(record.id)}
                 >Remove</button
               >
             </li>

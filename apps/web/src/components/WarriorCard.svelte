@@ -29,19 +29,31 @@
     }
   });
   const runningItems = $derived(warrior.items.filter((i) => i.status === 'running').length);
+  const address = $derived(`${warrior.host}:${warrior.port}`);
 </script>
 
+<!--
+  Cards in a grid row share a height. daisyUI lets every <p> in a card body grow to fill it, which
+  would open a blank block mid-card, so the paragraphs here stay at their size and the footer takes
+  the slack instead.
+-->
 <article class="card bg-base-100 shadow-sm {live ? '' : 'opacity-70'}">
   <div class="card-body gap-3 p-4">
     <header class="flex flex-wrap items-start justify-between gap-2">
       <div class="min-w-0">
-        <h2 class="card-title text-base leading-tight">{warrior.name}</h2>
+        <h2 class="card-title block truncate text-base leading-tight" title={warrior.name}>
+          {warrior.name}
+        </h2>
+        <!-- An unnamed warrior is already titled by its address, so the link says what it does. -->
         <a
-          class="link link-hover text-xs text-base-content/60 font-mono"
-          href="http://{warrior.host}:{warrior.port}/"
+          class="link link-hover text-xs text-base-content/60 {warrior.name === address
+            ? ''
+            : 'font-mono'}"
+          href="http://{address}/"
           target="_blank"
           rel="noreferrer"
-          title="Open the warrior's own web interface in a new tab">{warrior.host}:{warrior.port}</a
+          title="Open the warrior's own web interface in a new tab"
+          >{warrior.name === address ? 'Open warrior interface ↗' : address}</a
         >
       </div>
       <div class="flex flex-wrap items-center gap-1.5">
@@ -55,11 +67,11 @@
     </header>
 
     {#if !warrior.enabled}
-      <p class="text-sm text-base-content/60">
-        Disabled. Enable it from Manage warriors to collect data.
+      <p class="grow-0 text-sm text-base-content/60">
+        Disabled. Enable it under Settings to collect data.
       </p>
     {:else if warrior.connection.state !== 'connected' && warrior.connection.lastError}
-      <p class="text-sm text-warning">
+      <p class="grow-0 text-sm text-warning">
         {warrior.connection.lastError}
         <span class="text-base-content/50"
           >· last message {formatAgo(warrior.connection.lastSeenAt, now)}</span
@@ -73,7 +85,7 @@
           <img
             src={warrior.project.logo}
             alt=""
-            class="size-8 shrink-0 rounded object-contain"
+            class="size-8 shrink-0 rounded bg-base-200 object-contain"
             loading="lazy"
           />
         {/if}
@@ -113,8 +125,12 @@
       </div>
     {/if}
 
+    {#if live && warrior.project && warrior.items.length === 0}
+      <p class="grow-0 text-sm text-base-content/60">No items in flight.</p>
+    {/if}
+
     {#if warrior.bandwidth}
-      <div class="grid grid-cols-[auto_1fr] items-center gap-3">
+      <div class="grid gap-2 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-3">
         <dl class="text-sm space-y-1 whitespace-nowrap">
           <div class="flex items-center gap-2">
             <span class="inline-block h-0.5 w-3 rounded" style="background: var(--viz-down)"></span>
@@ -133,7 +149,7 @@
       </div>
       {#if warrior.rolling && warrior.rolling.samples > 0}
         <p
-          class="text-xs text-base-content/60"
+          class="grow-0 text-xs text-base-content/60"
           title="{warrior.rolling.samples} samples; peak ↓ {formatRate(
             warrior.rolling.peakReceiving,
           )} ↑ {formatRate(warrior.rolling.peakSending)}"
@@ -153,13 +169,13 @@
       </ul>
     {/if}
 
-    <footer class="flex flex-wrap justify-between gap-2 text-xs text-base-content/50">
+    <footer class="mt-auto flex flex-wrap justify-between gap-2 text-xs text-base-content/50">
       <span>
         {warrior.counters.completed} completed · {warrior.counters.failed} failed
         {#if warrior.counters.canceled}· {warrior.counters.canceled} canceled{/if}
       </span>
       {#if warrior.broadcastMessage}
-        <span class="truncate" title={warrior.broadcastMessage}
+        <span class="min-w-0 max-w-full truncate" title={warrior.broadcastMessage}
           >Announcement: {warrior.broadcastMessage}</span
         >
       {/if}
