@@ -102,6 +102,31 @@ test('dashboard with a working, an idle, and an empty warrior', async ({ page, r
   });
 });
 
+test('card actions: menu, project picker, and the pending line', async ({ page }) => {
+  await page.goto('/');
+  const cards = page.locator('article');
+  await expect(cards.getByText('Connected')).toHaveCount(3, { timeout: 15_000 });
+  // The idle extra warrior accepts commands but never reports back, so its pending line stays.
+  const idle = cards.filter({ hasText: 'warrior-idle' });
+  await idle.getByRole('button', { name: /^Actions for/ }).click();
+  await capture(page, 'dashboard-menu', () =>
+    expect(idle.getByRole('menuitem', { name: 'Change project…' })).toBeVisible(),
+  );
+  await idle.getByRole('menuitem', { name: 'Change project…' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('radio', { name: /Telegram/ }).check();
+  await capture(page, 'dialog-change-project', () => expect(dialog).toBeVisible());
+  await dialog.getByRole('button', { name: 'Switch project' }).click();
+  await capture(page, 'dashboard-pending', () => expect(idle.getByRole('status')).toBeVisible());
+
+  const busy = cards.filter({ hasText: 'warrior-busy' });
+  await busy.getByRole('button', { name: /^Actions for/ }).click();
+  await busy.getByRole('menuitem', { name: 'Settings…' }).click();
+  await capture(page, 'dialog-settings', () =>
+    expect(page.getByRole('dialog').getByLabel('Nickname')).toHaveValue('fake'),
+  );
+});
+
 test('projects index and detail', async ({ page }) => {
   await page.goto('/projects');
   const table = page.locator('main table');
@@ -113,6 +138,12 @@ test('projects index and detail', async ({ page }) => {
   await page.goto('/projects/blogger');
   await capture(page, 'project-detail', () =>
     expect(page.getByRole('heading', { name: 'Blogger' })).toBeVisible(),
+  );
+  await page.goto('/projects/telegram');
+  await expect(page.getByRole('heading', { name: 'Telegram' })).toBeVisible();
+  await page.getByRole('button', { name: 'Run on this project…' }).click();
+  await capture(page, 'dialog-run-on-project', () =>
+    expect(page.getByRole('dialog', { name: 'Run Telegram on…' })).toBeVisible(),
   );
 });
 
