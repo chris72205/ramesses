@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { FakeWarrior } from '../../server/test/support/fake-warrior';
 import { BACKEND_PORT } from '../playwright.config';
 
 const fakeWarrior = () => `127.0.0.1:${process.env.FAKE_WARRIOR_PORT}`;
@@ -114,4 +115,47 @@ test('a project page can put warriors onto its project', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Close' }).click();
   await expect(dialog).toBeHidden();
   await expect(mine.getByRole('link', { name: fakeWarrior() })).toBeVisible({ timeout: 15_000 });
+});
+
+test.describe('stop all', () => {
+  let second: FakeWarrior | undefined;
+
+  test.afterAll(async ({ request }) => {
+    await second?.stop();
+    const all = (await (
+      await request.get(`http://localhost:${BACKEND_PORT}/api/warriors`)
+    ).json()) as Array<{ id: string; name: string }>;
+    for (const w of all) {
+      if (w.name === 'warrior-two') {
+        await request.delete(`http://localhost:${BACKEND_PORT}/api/warriors/${w.id}`);
+      }
+    }
+  });
+
+  test('idles every warrior that has a project', async ({ page, request }) => {
+    // The first fake is on Telegram from the project page test; the second starts on uploader.jp.
+    second = await new FakeWarrior({ tickMs: 250 }).start();
+    second.reactToCommands();
+    await request.post(`http://localhost:${BACKEND_PORT}/api/warriors`, {
+      data: { host: '127.0.0.1', port: second.port, name: 'warrior-two' },
+    });
+
+    await page.goto('/');
+    const cards = page.locator('article');
+    await expect(cards).toHaveCount(2);
+    await expect(cards.getByText('Connected')).toHaveCount(2, { timeout: 15_000 });
+    await expect(cards.getByText('Working on a project')).toHaveCount(2);
+
+    await page.getByRole('button', { name: 'Stop all…' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Stop all warriors' });
+    await expect(dialog.getByRole('checkbox')).toHaveCount(2);
+    await expect(dialog.getByLabel('Stop warrior-two')).toBeChecked();
+    await dialog.getByRole('button', { name: 'Stop 2 warriors' }).click();
+    await expect(dialog.getByText('accepted')).toHaveCount(2);
+    await dialog.getByRole('button', { name: 'Close' }).click();
+    await expect(dialog).toBeHidden();
+
+    await expect(cards.getByText('No project selected.')).toHaveCount(2, { timeout: 10_000 });
+    await expect(page.getByRole('button', { name: 'Stop all…' })).toBeDisabled();
+  });
 });

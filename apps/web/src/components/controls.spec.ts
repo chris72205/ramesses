@@ -4,9 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WarriorCatalogProject, WarriorSnapshot } from '@ramesses/shared';
 import { api, ApiError } from '../lib/api';
 import { controls } from '../lib/controls.svelte';
+import { fleet } from '../lib/fleet.svelte';
 import ConfirmDialog from './ConfirmDialog.svelte';
 import ProjectPicker from './ProjectPicker.svelte';
 import RunOnProjectDialog from './RunOnProjectDialog.svelte';
+import Dashboard from './Dashboard.svelte';
+import StopAllDialog from './StopAllDialog.svelte';
 import WarriorCard from './WarriorCard.svelte';
 import WarriorSettingsDialog from './WarriorSettingsDialog.svelte';
 import { createRawSnippet } from 'svelte';
@@ -370,5 +373,77 @@ describe('RunOnProjectDialog', () => {
   it('says when nothing is connected', () => {
     render(RunOnProjectDialog, { project, warriors: [warriors[4]!], onclose: vi.fn() });
     expect(screen.getByText(/No warrior is connected/)).toBeInTheDocument();
+  });
+});
+
+describe('StopAllDialog', () => {
+  const warriors = [
+    snapshot(),
+    snapshot({ id: 'w2', name: 'warrior-2', status: 'STOPPING_PROJECT' }),
+    snapshot({ id: 'w3', name: 'warrior-3', project: null, status: 'NO_PROJECT' }),
+    snapshot({ id: 'w4', name: 'warrior-4', status: 'REBOOTING' }),
+    snapshot({
+      id: 'w5',
+      name: 'warrior-5',
+      connection: { ...snapshot().connection, state: 'offline' },
+    }),
+  ];
+
+  it('lists working warriors, checked by default, and skips idle or offline ones', () => {
+    render(StopAllDialog, { warriors, onclose: vi.fn() });
+    expect(screen.getByRole('dialog', { name: 'Stop all warriors' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Stop warrior-1')).toBeChecked();
+    expect(screen.getByText('Now on Telegram')).toBeInTheDocument();
+    expect(screen.getByLabelText('Stop warrior-2')).toBeDisabled();
+    expect(screen.getByText('Already stopping')).toBeInTheDocument();
+    expect(screen.getByLabelText('Stop warrior-4')).toBeDisabled();
+    expect(screen.getByText('Rebooting')).toBeInTheDocument();
+    expect(screen.queryByText('warrior-3')).not.toBeInTheDocument();
+    expect(screen.queryByText('warrior-5')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Stop 1 warrior' })).toBeEnabled();
+    expect(screen.getByText(/Nothing is shut down/)).toBeInTheDocument();
+  });
+
+  it('deselects each checked warrior in turn and reports the outcome', async () => {
+    const onclose = vi.fn();
+    render(StopAllDialog, {
+      warriors: [warriors[0]!, snapshot({ id: 'w6', name: 'warrior-6' })],
+      onclose,
+    });
+    await fireEvent.click(screen.getByLabelText('Stop warrior-6'));
+    await fireEvent.click(screen.getByRole('button', { name: 'Stop 1 warrior' }));
+    expect(await screen.findByText('accepted')).toBeInTheDocument();
+    expect(api.deselectProject).toHaveBeenCalledTimes(1);
+    expect(api.deselectProject).toHaveBeenCalledWith('w1');
+    expect(controls.pending['w1']?.label).toBe('Stopping work…');
+    await fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(onclose).toHaveBeenCalledOnce();
+  });
+
+  it('says when nothing is working', () => {
+    render(StopAllDialog, { warriors: [warriors[2]!], onclose: vi.fn() });
+    expect(screen.getByText(/No connected warrior is working/)).toBeInTheDocument();
+  });
+});
+
+describe('Dashboard stop all', () => {
+  it('offers Stop all only while a connected warrior has a project', async () => {
+    fleet.ready = true;
+    fleet.warriors = {
+      w3: snapshot({ id: 'w3', name: 'warrior-3', project: null, status: 'NO_PROJECT' }),
+    };
+    const first = render(Dashboard);
+    expect(screen.getByRole('button', { name: 'Stop all…' })).toBeDisabled();
+    first.unmount();
+
+    fleet.warriors = { w1: snapshot() };
+    render(Dashboard);
+    const button = screen.getByRole('button', { name: 'Stop all…' });
+    expect(button).toBeEnabled();
+    await fireEvent.click(button);
+    expect(screen.getByRole('dialog', { name: 'Stop all warriors' })).toBeInTheDocument();
+    await fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    fleet.warriors = {};
   });
 });
