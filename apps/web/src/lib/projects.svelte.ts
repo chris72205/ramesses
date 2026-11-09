@@ -5,7 +5,8 @@ import { api } from './api';
 /**
  * Project catalog with the latest tracker numbers. The `/ws` channel fills it: the full catalog
  * arrives in `hello` and again in a `projects` message after every tracker sample. The REST load
- * is the fallback for a page opened before the socket has delivered anything.
+ * is the fallback for a page opened before the socket has delivered anything. The catalog is
+ * stored whole, hidden projects included; the Projects page filters it from its URL query.
  */
 export class ProjectsStore {
   items = $state<ProjectSummary[]>([]);
@@ -13,12 +14,8 @@ export class ProjectsStore {
   error = $state<string | null>(null);
   /** ms since epoch of the last successful load, null before the first */
   loadedAt = $state<number | null>(null);
-  includeHidden = $state(false);
 
   readonly byName = $derived(new SvelteMap(this.items.map((p) => [p.name, p])));
-  readonly visible = $derived(
-    this.includeHidden ? this.items : this.items.filter((p) => p.listed && p.active),
-  );
   /** most recent sample time across the catalog, for the page header */
   readonly lastSampledAt = $derived.by(() => {
     let latest: string | null = null;

@@ -12,21 +12,14 @@ vi.mock('./api', async (importOriginal) => {
 describe('ProjectsStore', () => {
   afterEach(() => mocks.listProjects.mockReset());
 
-  it('loads everything once and filters hidden projects client-side', async () => {
+  it('loads the whole catalog once, hidden projects included', async () => {
     mocks.listProjects.mockResolvedValueOnce(catalog);
     const store = new ProjectsStore();
     expect(store.loadedAt).toBeNull();
     await store.load();
     expect(mocks.listProjects).toHaveBeenCalledWith(true);
     expect(store.items).toHaveLength(5);
-    expect(store.visible.map((p) => p.name)).toEqual([
-      'blogger',
-      'telegram',
-      'urlteam2',
-      'pastebin',
-    ]);
-    store.includeHidden = true;
-    expect(store.visible).toHaveLength(5);
+    expect(store.byName.get('oldproject')?.active).toBe(false);
     expect(store.byName.get('telegram')?.isAuto).toBe(true);
     expect(store.lastSampledAt).toBe(catalog[0]!.lastSampledAt);
     expect(store.loadedAt).not.toBeNull();
