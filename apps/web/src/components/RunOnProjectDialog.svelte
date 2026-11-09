@@ -36,6 +36,7 @@
 <WarriorBatchDialog
   title="Run {project.title} on…"
   verb="Run on"
+  subject={project.title}
   {rows}
   footnote="Items in flight finish on the current project before the switch."
   emptyText="No warrior is connected right now."

@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { CreateWarriorInput } from '@ramesses/shared';
   import { api, ApiError, parseHostLine } from '../lib/api';
+  import { pluralize } from '../lib/format';
+  import { notifications } from '../lib/notifications.svelte';
 
   let { onadded }: { onadded: () => void } = $props();
 
@@ -9,13 +11,13 @@
   let name = $state('');
   let bulk = $state('');
   let busy = $state(false);
+  // Failures stay next to the form: the lines that failed are still in the box to be fixed.
   let errors = $state<string[]>([]);
-  let added = $state(0);
 
   async function submit(inputs: CreateWarriorInput[]): Promise<void> {
     busy = true;
     errors = [];
-    added = 0;
+    let added = 0;
     for (const input of inputs) {
       try {
         await api.createWarrior(input);
@@ -29,7 +31,10 @@
       }
     }
     busy = false;
-    if (added > 0) onadded();
+    if (added > 0) {
+      notifications.success(`Added ${pluralize(added, 'warrior')}`);
+      onadded();
+    }
   }
 
   async function addOne(event: SubmitEvent): Promise<void> {

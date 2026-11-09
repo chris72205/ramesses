@@ -32,6 +32,7 @@
     TRACKER_LABELS,
     TRACKER_VALUES,
   } from '../lib/project-filters';
+  import { notifications } from '../lib/notifications.svelte';
   import { projects } from '../lib/projects.svelte';
   import { p } from '../lib/router';
   import { groupWarriorsByProject } from '../lib/warriors-by-project';
@@ -126,22 +127,27 @@
   const activeFilters = $derived(describeFilters(filters));
   const filtersActive = $derived(!isDefaultFilters(filters));
 
-  let refreshNote = $state<string | null>(null);
   let refreshing = $state(false);
   async function refresh() {
     refreshing = true;
     try {
       const result = await api.refreshProjects();
       if (result.requested) {
-        refreshNote = 'Refresh requested. New numbers arrive here as soon as the sample finishes.';
+        notifications.success(
+          'Refresh requested. New numbers arrive here as soon as the sample finishes.',
+        );
       } else {
         const sampled = `Sampled ${formatIsoAgo(result.lastRunAt, Date.now())}.`;
-        refreshNote = result.nextAllowedAt
-          ? `${sampled} Next refresh allowed at ${formatClock(Date.parse(result.nextAllowedAt))}.`
-          : `${sampled} Too soon to sample again; try in a few minutes.`;
+        notifications.info(
+          result.nextAllowedAt
+            ? `${sampled} Next refresh allowed at ${formatClock(Date.parse(result.nextAllowedAt))}.`
+            : `${sampled} Too soon to sample again; try in a few minutes.`,
+        );
       }
     } catch (error) {
-      refreshNote = `Refresh failed: ${error instanceof Error ? error.message : String(error)}`;
+      notifications.error(
+        `Refresh failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
     } finally {
       refreshing = false;
     }
@@ -168,10 +174,6 @@
       Refresh now
     </button>
   </header>
-
-  {#if refreshNote}
-    <div role="status" class="alert alert-soft text-sm py-2">{refreshNote}</div>
-  {/if}
 
   {#if projects.error}
     <div role="alert" class="alert alert-error">

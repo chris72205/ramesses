@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { catalog, FIXTURE_NOW, summary, warriorOn } from '../test/project-fixtures';
 import { fleet } from '../lib/fleet.svelte';
 import type * as ApiModule from '../lib/api';
+import { notifications } from '../lib/notifications.svelte';
 import { projects } from '../lib/projects.svelte';
 import ProjectsPage from './ProjectsPage.svelte';
 
@@ -40,6 +41,7 @@ describe('ProjectsPage', () => {
     projects.error = null;
     fleet.now = FIXTURE_NOW; // deadlines and ages in the fixtures are relative to this instant
     fleet.warriors = {};
+    notifications.clear();
     mocks.listProjects.mockResolvedValue(catalog);
   });
   afterEach(() => {
@@ -183,16 +185,19 @@ describe('ProjectsPage', () => {
     expect(screen.getByLabelText('Show hidden')).toBeChecked();
   });
 
-  it('requests a refresh and explains the throttle', async () => {
+  it('requests a refresh and explains the throttle through toasts', async () => {
     render(ProjectsPage);
     await screen.findByRole('link', { name: 'Blogger' });
+    const latest = () => notifications.items.at(-1);
     mocks.refreshProjects.mockResolvedValueOnce({
       requested: false,
       lastRunAt: new Date(Date.now() - 60_000).toISOString(),
       nextAllowedAt: new Date(Date.now() + 240_000).toISOString(),
     });
     await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
-    expect(await screen.findByRole('status')).toHaveTextContent(/Next refresh allowed at/);
+    await waitFor(() => expect(latest()?.message).toMatch(/Next refresh allowed at/));
+    expect(latest()?.level).toBe('info');
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
 
     mocks.refreshProjects.mockResolvedValueOnce({
       requested: true,
@@ -200,7 +205,8 @@ describe('ProjectsPage', () => {
       nextAllowedAt: null,
     });
     await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(/Refresh requested/));
+    await waitFor(() => expect(latest()?.message).toMatch(/Refresh requested/));
+    expect(latest()?.level).toBe('success');
 
     mocks.refreshProjects.mockResolvedValueOnce({
       requested: false,
@@ -208,15 +214,13 @@ describe('ProjectsPage', () => {
       nextAllowedAt: null,
     });
     await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
-    await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent(/Sampled .* ago\. Too soon/),
-    );
+    await waitFor(() => expect(latest()?.message).toMatch(/Sampled .* ago\. Too soon/));
 
     mocks.refreshProjects.mockRejectedValueOnce(new Error('nope'));
     await fireEvent.click(screen.getByRole('button', { name: 'Refresh now' }));
-    await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent(/Refresh failed: nope/),
-    );
+    await waitFor(() => expect(latest()?.message).toBe('Refresh failed: nope'));
+    expect(latest()?.level).toBe('error');
+    expect(notifications.items).toHaveLength(4);
   });
 
   it('shows errors with a retry and an empty state', async () => {

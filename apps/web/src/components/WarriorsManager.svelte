@@ -1,19 +1,23 @@
 <script lang="ts">
   import type { WarriorRecord } from '@ramesses/shared';
   import { api } from '../lib/api';
+  import { notifications } from '../lib/notifications.svelte';
   import AddWarriorsForm from './AddWarriorsForm.svelte';
 
   let { records, onchange }: { records: WarriorRecord[]; onchange: () => void } = $props();
 
-  let error = $state<string | null>(null);
-
-  async function run(action: () => Promise<unknown>): Promise<void> {
-    error = null;
+  /** Runs one change to `record` and reports it; `done` is the past-tense outcome, such as "deleted". */
+  async function run(
+    record: WarriorRecord,
+    action: () => Promise<unknown>,
+    done: string,
+  ): Promise<void> {
     try {
       await action();
+      notifications.success(`${record.name} ${done}`);
       onchange();
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
+      notifications.error(`${record.name}: ${e instanceof Error ? e.message : String(e)}`);
     }
   }
 </script>
@@ -48,16 +52,20 @@
                   class="toggle toggle-sm toggle-success"
                   checked={record.enabled}
                   aria-label="Enabled"
-                  onchange={(event) =>
-                    void run(() =>
-                      api.updateWarrior(record.id, { enabled: event.currentTarget.checked }),
-                    )}
+                  onchange={(event) => {
+                    const enabled = event.currentTarget.checked;
+                    void run(
+                      record,
+                      () => api.updateWarrior(record.id, { enabled }),
+                      enabled ? 'enabled' : 'disabled',
+                    );
+                  }}
                 />
               </td>
               <td class="text-right whitespace-nowrap">
                 <button
                   class="btn btn-ghost btn-xs text-error"
-                  onclick={() => void run(() => api.deleteWarrior(record.id))}
+                  onclick={() => void run(record, () => api.deleteWarrior(record.id), 'deleted')}
                 >
                   Delete
                 </button>
@@ -69,10 +77,6 @@
     </div>
   {:else}
     <p class="text-sm text-base-content/60">No warriors configured.</p>
-  {/if}
-
-  {#if error}
-    <div role="alert" class="alert alert-error text-sm"><span>{error}</span></div>
   {/if}
 
   <div class="divider my-0">Add</div>

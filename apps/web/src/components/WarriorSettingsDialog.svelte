@@ -2,11 +2,13 @@
   import { onMount } from 'svelte';
   import type { UpdateWarriorSettingsInput, WarriorSnapshot } from '@ramesses/shared';
   import { api, ApiError } from '../lib/api';
+  import { notifications } from '../lib/notifications.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
 
   /**
    * Nickname and concurrency of one warrior, read from the warrior when the dialog opens and
    * written back on save. Nothing is cached: the warrior's own page may have changed them.
+   * Errors stay in the dialog, next to the edits they concern; only a saved result closes it.
    */
   let { warrior, onclose }: { warrior: WarriorSnapshot; onclose: () => void } = $props();
 
@@ -55,6 +57,7 @@
     fieldErrors = {};
     try {
       await api.updateSettings(warrior.id, input);
+      notifications.success(`Settings saved for ${warrior.name}`);
       onclose();
     } catch (e) {
       if (e instanceof ApiError && Object.keys(e.fields).length > 0) fieldErrors = e.fields;

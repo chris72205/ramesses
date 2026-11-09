@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ServerMessage } from '@ramesses/shared';
 import App from './App.svelte';
 import type * as ApiModule from './lib/api';
+import { notifications } from './lib/notifications.svelte';
 import { warriors } from './lib/warriors.svelte';
 
 const mocks = vi.hoisted(() => ({
@@ -138,5 +139,17 @@ describe('App', () => {
     } finally {
       history.pushState({}, '', '/');
     }
+  });
+
+  it('hosts the toasts once, outside the page content', async () => {
+    mocks.listWarriors.mockResolvedValue([]);
+    render(App);
+    await screen.findByRole('heading', { name: 'Add your warriors' });
+    expect(screen.queryByRole('region', { name: 'Notifications' })).not.toBeInTheDocument();
+    notifications.success('Saved');
+    const region = await screen.findByRole('region', { name: 'Notifications' });
+    expect(region.closest('main')).toBeNull();
+    expect(screen.getByRole('status')).toHaveTextContent('Saved');
+    notifications.clear();
   });
 });

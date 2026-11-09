@@ -1,5 +1,6 @@
 <script module lang="ts">
   import type { WarriorSnapshot } from '@ramesses/shared';
+  import { pluralize } from '../lib/format';
 
   /** One warrior the dialog offers, with why it can or cannot take part. */
   export interface BatchRow {
@@ -7,20 +8,36 @@
     eligible: boolean;
     note: string;
   }
+
+  /**
+   * The one line that reports a batch: "Telegram requested on 3 warriors", with the failures
+   * listed when some warriors turned the request down, or "Stop failed on 2 warriors: …" when
+   * all of them did.
+   */
+  export function summarizeBatch(subject: string, accepted: number, failures: string[]): string {
+    if (failures.length === 0) return `${subject} requested on ${pluralize(accepted, 'warrior')}`;
+    const list = failures.join('; ');
+    if (accepted === 0) {
+      return `${subject} failed on ${pluralize(failures.length, 'warrior')}: ${list}`;
+    }
+    return `${subject} requested on ${pluralize(accepted, 'warrior')} (${failures.length} failed: ${list})`;
+  }
 </script>
 
 <script lang="ts">
-  import { controls } from '../lib/controls.svelte';
+  import type { ControlResult } from '../lib/controls.svelte';
+  import { notifications } from '../lib/notifications.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
 
   /**
-   * Pick warriors and send one control request to each, one at a time, reporting per row whether
-   * the warrior accepted. The pending state of each warrior shows on its card through the
-   * controls store; this dialog only shows the request outcome.
+   * Pick warriors and send one control request to each. The dialog closes as soon as the run is
+   * confirmed: each warrior's card shows its pending state through the controls store, and one
+   * toast sums up which warriors accepted once the last request has been answered.
    */
   let {
     title,
     verb,
+    subject,
     rows,
     defaultChecked = false,
     footnote,
@@ -31,53 +48,46 @@
     title: string;
     /** the confirm button reads "<verb> N warrior(s)" */
     verb: string;
+    /** what the summary toast says was requested, such as the project title or "Stop" */
+    subject: string;
     rows: BatchRow[];
     /** whether eligible rows start checked */
     defaultChecked?: boolean;
     footnote: string;
     /** shown instead of the list when there is no row at all */
     emptyText: string;
-    /** sends the request for one warrior; resolves to true when it was accepted */
-    run: (warrior: WarriorSnapshot) => Promise<boolean>;
+    /** sends the request for one warrior */
+    run: (warrior: WarriorSnapshot) => Promise<ControlResult>;
     onclose: () => void;
   } = $props();
-
-  type Result = { state: 'running' } | { state: 'ok' } | { state: 'failed'; message: string };
 
   // Only explicit toggles are stored, so a row that appears while the dialog is open starts at
   // the default like the others.
   let toggled = $state<Record<string, boolean>>({});
-  let results = $state<Record<string, Result>>({});
-  let running = $state(false);
-  let done = $state(false);
 
   const isChecked = (row: BatchRow): boolean =>
     row.eligible && (toggled[row.warrior.id] ?? defaultChecked);
   const count = $derived(rows.filter(isChecked).length);
 
   async function start(): Promise<void> {
-    running = true;
-    for (const row of rows) {
-      if (!isChecked(row)) continue;
-      results[row.warrior.id] = { state: 'running' };
-      const ok = await run(row.warrior);
-      // The store keeps the server's message for the card; the row repeats it.
-      results[row.warrior.id] = ok
-        ? { state: 'ok' }
-        : { state: 'failed', message: controls.errors[row.warrior.id] ?? 'Request failed' };
+    const chosen = rows.filter(isChecked).map((row) => row.warrior);
+    onclose();
+    const failures: string[] = [];
+    for (const warrior of chosen) {
+      const result = await run(warrior);
+      if (!result.accepted) failures.push(`${warrior.name}: ${result.error}`);
     }
-    running = false;
-    done = true;
+    const message = summarizeBatch(subject, chosen.length - failures.length, failures);
+    if (failures.length === 0) notifications.success(message);
+    else notifications.error(message);
   }
 </script>
 
 <ConfirmDialog
   {title}
-  confirmLabel={done ? 'Close' : `${verb} ${count} warrior${count === 1 ? '' : 's'}`}
-  cancelLabel={done ? null : 'Cancel'}
-  busy={running}
-  disabled={!done && count === 0}
-  onconfirm={done ? onclose : () => void start()}
+  confirmLabel="{verb} {pluralize(count, 'warrior')}"
+  disabled={count === 0}
+  onconfirm={() => void start()}
   oncancel={onclose}
 >
   {#if rows.length === 0}
@@ -85,34 +95,19 @@
   {:else}
     <ul class="divide-y divide-base-200">
       {#each rows as row (row.warrior.id)}
-        {@const result = results[row.warrior.id]}
         <li class="flex items-center gap-3 py-2">
           <input
             type="checkbox"
             class="checkbox checkbox-sm"
             aria-label="{verb} {row.warrior.name}"
-            disabled={!row.eligible || running || done}
+            disabled={!row.eligible}
             checked={isChecked(row)}
             onchange={(event) => (toggled[row.warrior.id] = event.currentTarget.checked)}
           />
           <span class="min-w-0 flex-1">
             <span class="block truncate font-medium">{row.warrior.name}</span>
-            <span class="block truncate text-xs text-base-content/60">
-              {#if result?.state === 'failed'}
-                <span class="text-error">{result.message}</span>
-              {:else}
-                {row.note}
-              {/if}
-            </span>
+            <span class="block truncate text-xs text-base-content/60">{row.note}</span>
           </span>
-          {#if result?.state === 'running'}
-            <span class="loading loading-spinner loading-xs" role="status" aria-label="Sending"
-            ></span>
-          {:else if result?.state === 'ok'}
-            <span class="badge badge-xs badge-success badge-soft">accepted</span>
-          {:else if result?.state === 'failed'}
-            <span class="badge badge-xs badge-error badge-soft">failed</span>
-          {/if}
         </li>
       {/each}
     </ul>

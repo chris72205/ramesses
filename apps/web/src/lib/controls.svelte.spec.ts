@@ -70,7 +70,7 @@ describe('ControlsStore', () => {
 
   it('marks a project switch pending until the warrior runs the new project', async () => {
     const warrior = snapshot();
-    await expect(store.selectProject(warrior, 'blogger')).resolves.toBe(true);
+    await expect(store.selectProject(warrior, 'blogger')).resolves.toEqual({ accepted: true });
     expect(api.selectProject).toHaveBeenCalledWith('w1', 'blogger');
     expect(store.pending['w1']).toMatchObject({
       command: 'select_project',
@@ -107,7 +107,7 @@ describe('ControlsStore', () => {
   });
 
   it('marks a stop pending until the warrior is idle', async () => {
-    await expect(store.deselectProject(snapshot())).resolves.toBe(true);
+    await expect(store.deselectProject(snapshot())).resolves.toEqual({ accepted: true });
     expect(api.deselectProject).toHaveBeenCalledWith('w1');
     expect(store.pending['w1']?.label).toBe('Stopping work…');
     store.settle(snapshot({ status: 'STOPPING_PROJECT' }));
@@ -116,19 +116,21 @@ describe('ControlsStore', () => {
     expect(store.pending['w1']).toBeUndefined();
   });
 
-  it('records the server error and drops the pending entry when a request fails', async () => {
+  it('returns the server error and drops the pending entry when a request fails', async () => {
     vi.mocked(api.deselectProject).mockRejectedValue(new ApiError(502, 'Could not reach it'));
-    await expect(store.deselectProject(snapshot())).resolves.toBe(false);
+    await expect(store.deselectProject(snapshot())).resolves.toEqual({
+      accepted: false,
+      error: 'Could not reach it',
+    });
     expect(store.pending['w1']).toBeUndefined();
-    expect(store.errors['w1']).toBe('Could not reach it');
-    store.dismissError('w1');
-    expect(store.errors['w1']).toBeUndefined();
   });
 
   it('stringifies a non-Error rejection', async () => {
     vi.mocked(api.selectProject).mockRejectedValue('boom');
-    await store.selectProject(snapshot(), 'blogger');
-    expect(store.errors['w1']).toBe('boom');
+    await expect(store.selectProject(snapshot(), 'blogger')).resolves.toEqual({
+      accepted: false,
+      error: 'boom',
+    });
   });
 
   it('forgets a pending entry after the timeout', async () => {
