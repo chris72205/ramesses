@@ -26,6 +26,20 @@ async function openActions(page: Page) {
   return card;
 }
 
+test('a modal closes on a click outside its box, not inside it', async ({ page }) => {
+  await page.goto('/');
+  const card = await openActions(page);
+  await card.getByRole('menuitem', { name: 'Change project…' }).click();
+
+  const dialog = page.getByRole('dialog', { name: /Change project for/ });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('heading').click();
+  await expect(dialog).toBeVisible();
+
+  await page.mouse.click(5, 5);
+  await expect(dialog).toBeHidden();
+});
+
 test('a project can be changed from the card', async ({ page }) => {
   await page.goto('/');
   const card = await openActions(page);

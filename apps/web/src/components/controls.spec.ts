@@ -125,6 +125,46 @@ describe('ConfirmDialog', () => {
     expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Confirm' })).toBeDisabled();
   });
+
+  describe('backdrop clicks', () => {
+    function open(busy = false) {
+      const oncancel = vi.fn();
+      render(ConfirmDialog, { title: 'Sure?', busy, onconfirm: vi.fn(), oncancel, children: body });
+      return {
+        oncancel,
+        dialog: screen.getByRole('dialog'),
+        inside: screen.getByText('Body text'),
+      };
+    }
+
+    it('cancels on a click on the backdrop', async () => {
+      const { oncancel, dialog } = open();
+      await fireEvent.pointerDown(dialog);
+      await fireEvent.click(dialog);
+      expect(oncancel).toHaveBeenCalledOnce();
+    });
+
+    it('ignores a click inside the box', async () => {
+      const { oncancel, inside } = open();
+      await fireEvent.pointerDown(inside);
+      await fireEvent.click(inside);
+      expect(oncancel).not.toHaveBeenCalled();
+    });
+
+    it('ignores a drag that starts inside the box and ends on the backdrop', async () => {
+      const { oncancel, dialog, inside } = open();
+      await fireEvent.pointerDown(inside);
+      await fireEvent.click(dialog);
+      expect(oncancel).not.toHaveBeenCalled();
+    });
+
+    it('stays open while a request is in flight', async () => {
+      const { oncancel, dialog } = open(true);
+      await fireEvent.pointerDown(dialog);
+      await fireEvent.click(dialog);
+      expect(oncancel).not.toHaveBeenCalled();
+    });
+  });
 });
 
 describe('ProjectPicker', () => {
