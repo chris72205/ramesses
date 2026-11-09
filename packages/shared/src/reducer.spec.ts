@@ -4,6 +4,7 @@ import type { WarriorEvent } from './warrior-events.js';
 import {
   BANDWIDTH_HISTORY,
   FINISHED_ITEM_TTL_MS,
+  LOG_TAIL_CHARS,
   LOG_TAIL_LINES,
   applyEvent,
   createSnapshot,
@@ -164,6 +165,25 @@ describe('item lifecycle', () => {
     expect(lines.length).toBeLessThanOrEqual(LOG_TAIL_LINES);
     expect(lines).toContain(`line ${LOG_TAIL_LINES + 9}`);
   });
+
+  it('caps the log tail by characters when lines are long', () => {
+    const s = createSnapshot(record, T0);
+    applyEvent(s, { event_name: 'pipeline.start_item', message: { pipeline_id: 1, item } }, T0);
+    for (let i = 0; i < 10; i++) {
+      applyEvent(
+        s,
+        {
+          event_name: 'item.output',
+          message: { item_id: 'abc-1', data: `${i}:${'u'.repeat(1500)}\n` },
+        },
+        T0,
+      );
+    }
+    const tail = s.items[0]!.logTail;
+    expect(tail.length).toBeLessThanOrEqual(LOG_TAIL_CHARS);
+    expect(tail.startsWith('5:')).toBe(true);
+    expect(tail.endsWith('9:' + 'u'.repeat(1500) + '\n')).toBe(true);
+  });
 });
 
 describe('bandwidth and status', () => {
@@ -211,6 +231,40 @@ describe('helpers', () => {
   it('tailLines keeps the last N lines', () => {
     expect(tailLines('a\nb\nc\nd', 2)).toBe('c\nd');
     expect(tailLines('a\nb', 5)).toBe('a\nb');
+    expect(tailLines('a\nb\nc\n', 2)).toBe('c\n');
+    expect(tailLines('\na', 1)).toBe('a');
+    expect(tailLines('\n', 1)).toBe('');
+    expect(tailLines('', 3)).toBe('');
+    expect(tailLines('abc', 1)).toBe('abc');
+  });
+
+  it('tailLines matches a split-based tail for a stream of uneven chunks', () => {
+    const reference = (text: string, max: number) => {
+      const lines = text.split('\n');
+      return lines.length <= max ? text : lines.slice(lines.length - max).join('\n');
+    };
+    const chunks = ['a', 'b\n', '\n\n', 'c\nd\ne', 'f', '\ng\n', 'h\n\ni', '\n', 'j'];
+    for (const max of [1, 2, 3, 5]) {
+      let fast = '';
+      let slow = '';
+      for (let round = 0; round < 4; round++) {
+        for (const chunk of chunks) {
+          fast = tailLines(fast + chunk, max);
+          slow = reference(slow + chunk, max);
+          expect(fast).toBe(slow);
+        }
+      }
+    }
+  });
+
+  it('tailLines cuts to the character cap at a line boundary', () => {
+    expect(tailLines('aaaa\nbbbb\ncc', 10, 8)).toBe('bbbb\ncc');
+    // A cut that lands mid-line drops the rest of that line.
+    expect(tailLines('aaaa\nbbbb\ncc', 10, 9)).toBe('bbbb\ncc');
+    // A single line longer than the cap keeps its last characters.
+    expect(tailLines('x'.repeat(20), 10, 8)).toBe('x'.repeat(8));
+    // So does a single line with a trailing newline.
+    expect(tailLines('x'.repeat(20) + '\n', 10, 8)).toBe('x'.repeat(7) + '\n');
   });
 });
 
