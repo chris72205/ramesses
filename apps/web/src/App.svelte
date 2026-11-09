@@ -6,6 +6,7 @@
   import { warriors } from './lib/warriors.svelte';
   import SetupView from './components/SetupView.svelte';
   import SocketBadge from './components/SocketBadge.svelte';
+  import Toasts from './components/Toasts.svelte';
 
   /** First-run setup takes over the whole page until at least one warrior exists. */
   let setupActive = $state(false);
@@ -83,4 +84,5 @@
       <Router />
     {/if}
   </main>
+  <Toasts />
 </div>

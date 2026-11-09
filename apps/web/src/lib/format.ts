@@ -1,5 +1,10 @@
 const UNITS = ['B', 'kB', 'MB', 'GB', 'TB'];
 
+/** "1 warrior" or "3 warriors": the count with the noun in the matching number. */
+export function pluralize(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`;
+}
+
 /** 1234567 -> "1.2 MB" (decimal units, like the warrior UI). */
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '0 B';
