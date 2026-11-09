@@ -44,9 +44,29 @@
     event.preventDefault();
     if (!busy) oncancel();
   }
+
+  // A drag from inside the box that ends on the backdrop, such as selecting text in a field, also
+  // fires a click on the dialog, so the press has to have started on the backdrop too.
+  let pressedBackdrop = false;
+
+  function pressDialog(event: PointerEvent): void {
+    pressedBackdrop = event.target === dialog;
+  }
+
+  function clickDialog(event: MouseEvent): void {
+    if (pressedBackdrop && event.target === dialog) cancel(event);
+    pressedBackdrop = false;
+  }
 </script>
 
-<dialog class="modal" bind:this={dialog} oncancel={cancel} aria-labelledby="confirm-dialog-title">
+<dialog
+  class="modal"
+  bind:this={dialog}
+  oncancel={cancel}
+  onpointerdown={pressDialog}
+  onclick={clickDialog}
+  aria-labelledby="confirm-dialog-title"
+>
   <div class="modal-box max-w-md">
     <h3 id="confirm-dialog-title" class="text-base font-semibold">{title}</h3>
     <div class="space-y-3 py-3 text-sm">
