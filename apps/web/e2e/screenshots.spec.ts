@@ -141,6 +141,16 @@ test('projects index and detail', async ({ page }) => {
       timeout: 20_000,
     }),
   );
+  await page.goto('/projects?mine=running&health=unknown');
+  await capture(page, 'projects-filtered', () =>
+    expect(table.getByRole('row').filter({ hasText: 'uploader.jp' })).toBeVisible({
+      timeout: 20_000,
+    }),
+  );
+  await page.goto('/projects?q=nothing-here&tracker=universal&deadline=1');
+  await capture(page, 'projects-filtered-empty', () =>
+    expect(page.getByText('No projects match the current filters.')).toBeVisible(),
+  );
   await page.goto('/projects/blogger');
   await capture(page, 'project-detail', () =>
     expect(page.getByRole('heading', { name: 'Blogger' })).toBeVisible(),

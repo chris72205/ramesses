@@ -55,6 +55,39 @@ test('the Projects tab lists sampled projects and links to a detail page', async
   await expect(mine.getByText('connected')).toBeVisible();
 });
 
+test('filters combine, live in the URL, and reset from the empty state', async ({ page }) => {
+  await page.goto('/projects');
+  const table = page.locator('main table');
+  await expect(table.getByRole('row').filter({ hasText: 'Blogger' })).toBeVisible({
+    timeout: 20_000,
+  });
+  const filters = page.getByRole('form', { name: 'Filters' });
+
+  // The fake warrior runs uploader.jp, so that is the only project with one of our warriors.
+  await filters.getByLabel('Your warriors').selectOption('running');
+  await expect(table.getByRole('row').filter({ hasText: 'uploader.jp' })).toBeVisible({
+    timeout: 15_000,
+  });
+  await filters.getByLabel('Search projects').fill('upload');
+  await expect(page).toHaveURL(/\/projects\?q=upload&mine=running$/);
+  await expect(table.locator('tbody tr')).toHaveCount(1);
+  await expect(filters.getByText('1 of')).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByLabel('Search projects')).toHaveValue('upload');
+  await expect(page.getByLabel('Your warriors')).toHaveValue('running');
+  await expect(table.locator('tbody tr')).toHaveCount(1, { timeout: 20_000 });
+
+  await page.getByLabel('Search projects').fill('nothing-here');
+  await expect(page.getByText('No projects match the current filters.')).toBeVisible();
+  await expect(
+    page.getByText('Active filters: search "nothing-here", running on your warriors.'),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Reset filters' }).last().click();
+  await expect(page).toHaveURL(/\/projects$/);
+  await expect(table.getByRole('row').filter({ hasText: 'Blogger' })).toBeVisible();
+});
+
 test('a detail URL survives a reload and the tabs switch back', async ({ page }) => {
   await page.goto('/projects/telegram');
   await expect(page.getByRole('heading', { name: 'Telegram' })).toBeVisible({ timeout: 20_000 });
