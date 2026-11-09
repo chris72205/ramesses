@@ -7,6 +7,11 @@ import type { BandwidthSample, ItemSnapshot, ProjectInfo, WarriorSnapshot } from
 import type { WarriorCatalogProject, WarriorEvent, WarriorItem } from './warrior-events.js';
 
 export const LOG_TAIL_LINES = 40;
+/**
+ * Upper bound on the tail's length in characters. Lines are often long URLs, so the line cap alone
+ * lets a tail grow to tens of kilobytes; every tail also rides along in the `/ws` hello.
+ */
+export const LOG_TAIL_CHARS = 8_192;
 export const BANDWIDTH_HISTORY = 90;
 /** Finished items linger this long before being dropped, like the stock UI. */
 export const FINISHED_ITEM_TTL_MS = 15_000;
@@ -247,13 +252,36 @@ export function stripCarriageReturns(text: string): string {
 function appendLog(item: ItemSnapshot, data: string): void {
   const cleaned = stripCarriageReturns(data).replace(/\r\n/g, '\n');
   if (!cleaned) return;
-  item.logTail = tailLines(item.logTail + cleaned, LOG_TAIL_LINES);
+  item.logTail = tailLines(item.logTail + cleaned, LOG_TAIL_LINES, LOG_TAIL_CHARS);
 }
 
-/** Keep only the last `max` lines of `text`. */
-export function tailLines(text: string, max: number): string {
-  const lines = text.split('\n');
-  return lines.length <= max ? text : lines.slice(lines.length - max).join('\n');
+/**
+ * Keep only the last `maxLines` lines of `text`, and no more than `maxChars` characters. A trailing
+ * newline ends a line, so the empty remainder after it counts as one, like a `split('\n')` would.
+ *
+ * Output arrives in many small chunks per second for every running item, so this scans for
+ * newlines from the end and takes one slice instead of splitting the whole tail into an array and
+ * joining it back on every chunk.
+ */
+export function tailLines(text: string, maxLines: number, maxChars = Infinity): string {
+  let newlines = 0;
+  let position = text.length;
+  while (newlines < maxLines && position > 0) {
+    const index = text.lastIndexOf('\n', position - 1);
+    if (index === -1) break;
+    newlines += 1;
+    position = index;
+  }
+  let start = newlines === maxLines ? position + 1 : 0;
+  if (text.length - start > maxChars) {
+    // Start at a line boundary: a cut that lands mid-line drops the rest of that line, unless it
+    // is the only line left.
+    const cut = text.length - maxChars;
+    const lineEnd = text.indexOf('\n', cut);
+    const onBoundary = text.charCodeAt(cut - 1) === 10;
+    start = onBoundary || lineEnd === -1 || lineEnd === text.length - 1 ? cut : lineEnd + 1;
+  }
+  return start === 0 ? text : text.slice(start);
 }
 
 function resolveProject(
