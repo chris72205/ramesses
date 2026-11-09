@@ -1,10 +1,12 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WarriorCatalogProject, WarriorSnapshot } from '@ramesses/shared';
 import { api, ApiError } from '../lib/api';
 import { controls } from '../lib/controls.svelte';
 import { fleet } from '../lib/fleet.svelte';
+import { projects } from '../lib/projects.svelte';
+import { summary, warriorOn } from '../test/project-fixtures';
 import ConfirmDialog from './ConfirmDialog.svelte';
 import ProjectPicker from './ProjectPicker.svelte';
 import RunOnProjectDialog from './RunOnProjectDialog.svelte';
@@ -150,6 +152,117 @@ describe('ProjectPicker', () => {
   it('explains an empty catalog', () => {
     render(ProjectPicker, { catalog: {} });
     expect(screen.getByText(/has not loaded its project list/)).toBeInTheDocument();
+  });
+
+  describe('with tracker stats', () => {
+    const rowOf = (name: string) =>
+      screen.getByRole('radio', { name: new RegExp(name) }).closest('li') as HTMLElement;
+    const radioValues = () =>
+      screen.getAllByRole('radio').map((r) => (r as HTMLInputElement).value);
+
+    beforeEach(() => {
+      fleet.warriors = {};
+      projects.items = [
+        summary({ name: 'blogger', title: 'Blogger' }),
+        summary({
+          name: 'telegram',
+          title: 'Telegram',
+          doneRate: { h1: null, h6: null, h24: 900_000 },
+          health: 'drained',
+        }),
+        summary({ name: 'urlteam2', title: 'URLTeam 2', tracker: 'terroroftinytown' }),
+      ];
+    });
+
+    afterEach(() => {
+      fleet.warriors = {};
+      projects.items = [];
+    });
+
+    it('shows the rate, queue health, and to do count', () => {
+      render(ProjectPicker, { catalog });
+      const row = within(rowOf('Blogger'));
+      expect(row.getByText('437K/h')).toBeInTheDocument();
+      expect(row.getByText('Healthy')).toBeInTheDocument();
+      expect(row.getByText('340')).toBeInTheDocument();
+      expect(rowOf('Blogger')).toHaveTextContent('to do');
+    });
+
+    it('labels the rate when it falls back to the last day', () => {
+      render(ProjectPicker, { catalog });
+      expect(rowOf('Telegram')).toHaveTextContent('900K/h (24 h)');
+      expect(rowOf('Blogger')).not.toHaveTextContent('(24 h)');
+    });
+
+    it('notes a project on another tracker and shows nothing for an unknown one', () => {
+      projects.items = projects.items.filter((p) => p.name !== 'blogger');
+      render(ProjectPicker, { catalog });
+      expect(within(rowOf('URLTeam 2')).getByText('Stats unavailable')).toBeInTheDocument();
+      expect(rowOf('Blogger')).not.toHaveTextContent('/h');
+      expect(rowOf('Blogger')).not.toHaveTextContent('to do');
+      expect(rowOf('Blogger')).not.toHaveTextContent('Stats unavailable');
+    });
+
+    it('counts your warriors only where some are running', () => {
+      fleet.warriors = {
+        a: warriorOn('a', 'blogger'),
+        b: warriorOn('b', 'blogger'),
+      };
+      render(ProjectPicker, { catalog });
+      expect(rowOf('Blogger')).toHaveTextContent('2 of your warriors');
+      expect(rowOf('Telegram')).not.toHaveTextContent('of your warriors');
+    });
+
+    it('offers the whole description on hover', () => {
+      render(ProjectPicker, { catalog });
+      expect(screen.getByText('Blogs')).toHaveAttribute('title', 'Blogs');
+    });
+
+    it('expands one description at a time without selecting the project', async () => {
+      const twoDescriptions = {
+        ...catalog,
+        telegram: entry('telegram', 'Telegram', { description: 'Channels' }),
+      };
+      render(ProjectPicker, { catalog: twoDescriptions });
+      const blogs = screen.getByText('Blogs');
+      const channels = screen.getByText('Channels');
+      expect(blogs).toHaveClass('truncate');
+
+      const showBlogs = screen.getByRole('button', {
+        name: 'Show full description of Blogger',
+        hidden: true,
+      });
+      await fireEvent.click(showBlogs);
+      expect(showBlogs).toHaveAttribute('aria-expanded', 'true');
+      expect(blogs).not.toHaveClass('truncate');
+      expect(screen.getByRole('radio', { name: /Blogger/ })).not.toBeChecked();
+
+      await fireEvent.click(
+        screen.getByRole('button', { name: 'Show full description of Telegram', hidden: true }),
+      );
+      expect(blogs).toHaveClass('truncate');
+      expect(channels).not.toHaveClass('truncate');
+    });
+
+    it('has no expand button without a description', () => {
+      render(ProjectPicker, { catalog });
+      expect(
+        screen.queryByRole('button', { name: /description of Telegram/, hidden: true }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('sorts by rate on request and keeps the filter applied', async () => {
+      render(ProjectPicker, { catalog });
+      expect(radioValues()).toEqual(['blogger', 'telegram', 'urlteam2']);
+      expect(screen.getByRole('button', { name: 'Name' })).toHaveAttribute('aria-pressed', 'true');
+
+      await fireEvent.click(screen.getByRole('button', { name: 'Rate' }));
+      expect(screen.getByRole('button', { name: 'Rate' })).toHaveAttribute('aria-pressed', 'true');
+      expect(radioValues()).toEqual(['telegram', 'blogger', 'urlteam2']);
+
+      await fireEvent.input(screen.getByLabelText('Filter projects'), { target: { value: 'gr' } });
+      expect(radioValues()).toEqual(['telegram']);
+    });
   });
 });
 
