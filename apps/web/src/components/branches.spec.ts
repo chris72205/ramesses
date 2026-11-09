@@ -84,7 +84,6 @@ describe('WarriorCard status variants', () => {
     expect(screen.getByText(/Announcement: Tracker maintenance tonight/)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Leaderboard' })).not.toBeInTheDocument();
     expect(screen.queryByText(/average:/)).not.toBeInTheDocument();
-    expect(screen.getByText('0 items running')).toBeInTheDocument();
   });
 
   it('omits the status badge when the warrior has not reported one and the error line without an error', () => {

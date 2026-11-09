@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { FleetTotals } from '@ramesses/shared';
+  import { dashboardPreferences } from '../lib/dashboard-preferences.svelte';
   import { formatBytes, formatRate, formatWindow } from '../lib/format';
 
   let { totals }: { totals: FleetTotals } = $props();
@@ -38,7 +39,22 @@
     </div>
   </div>
   <div class="stat">
-    <div class="stat-title">Items in flight</div>
+    <div class="flex items-center justify-between gap-3">
+      <div class="stat-title">Items in flight</div>
+      {#if totals.warriors > 0}
+        <!-- The negative margin stops the taller toggle from moving this stat's value out of line
+             with the other stats. -->
+        <label class="-my-1 flex cursor-pointer items-center gap-2 text-xs whitespace-nowrap">
+          <input
+            type="checkbox"
+            class="toggle toggle-xs"
+            checked={dashboardPreferences.showItems}
+            onchange={(event) => dashboardPreferences.setShowItems(event.currentTarget.checked)}
+          />
+          Show items
+        </label>
+      {/if}
+    </div>
     <div class="stat-value text-2xl">{totals.itemsInFlight}</div>
     <div class="stat-desc">
       {totals.completed} completed, {totals.failed} failed since the backend started

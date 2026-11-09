@@ -102,6 +102,45 @@ test('dashboard with a working, an idle, and an empty warrior', async ({ page, r
   });
 });
 
+/**
+ * Gives every project a done rate on its way to the browser. The tracker is sampled once during
+ * a capture run, and a rate needs two samples, so the cards would otherwise never show one.
+ */
+async function injectDoneRates(page: Page): Promise<void> {
+  await page.routeWebSocket(/\/ws$/, (client) => {
+    const server = client.connectToServer();
+    client.onMessage((message) => server.send(message));
+    server.onMessage((message) => {
+      const parsed = JSON.parse(String(message)) as { projects?: Array<Record<string, unknown>> };
+      for (const project of parsed.projects ?? []) {
+        project.doneRate = { h1: 437_000, h6: 440_000, h24: 450_000 };
+      }
+      client.send(JSON.stringify(parsed));
+    });
+  });
+}
+
+test('dashboard with items hidden', async ({ page }) => {
+  await injectDoneRates(page);
+  await page.goto('/');
+  const cards = page.locator('article');
+  await expect(cards.getByText('Connected')).toHaveCount(3, { timeout: 15_000 });
+  await page.getByRole('checkbox', { name: 'Show items' }).uncheck();
+  await capture(page, 'dashboard-compact', () => expect(cards.locator('summary')).toHaveCount(0));
+  const rate = cards.getByText('437K/h').first();
+  const tooltipOpacity = (): Promise<string> =>
+    rate.evaluate((element) => getComputedStyle(element, '::before').opacity);
+  await capture(page, 'dashboard-rate-tooltip', async () => {
+    // Start each capture from no hover, so the delay runs in full.
+    await page.mouse.move(0, 0);
+    await page.waitForTimeout(400);
+    await rate.hover();
+    await page.waitForTimeout(400);
+    expect(await tooltipOpacity()).toBe('0');
+    await expect.poll(tooltipOpacity).toBe('1');
+  });
+});
+
 test('card actions: menu, project picker, and the pending line', async ({ page }) => {
   await page.goto('/');
   const cards = page.locator('article');

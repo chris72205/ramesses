@@ -1,7 +1,9 @@
 <script lang="ts">
   import { WARRIOR_STATUS_TEXT, type WarriorSnapshot } from '@ramesses/shared';
   import { controls } from '../lib/controls.svelte';
-  import { formatAgo, formatBytes, formatRate, formatWindow } from '../lib/format';
+  import { dashboardPreferences } from '../lib/dashboard-preferences.svelte';
+  import { formatAgo, formatBytes, formatPerHour, formatRate, formatWindow } from '../lib/format';
+  import { projects } from '../lib/projects.svelte';
   import BandwidthSparkline from './BandwidthSparkline.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import ConnectionBadge from './ConnectionBadge.svelte';
@@ -66,6 +68,14 @@
   });
   const runningItems = $derived(warrior.items.filter((i) => i.status === 'running').length);
   const address = $derived(`${warrior.host}:${warrior.port}`);
+  const average = $derived(
+    warrior.bandwidth && warrior.rolling && warrior.rolling.samples > 0 ? warrior.rolling : null,
+  );
+  const showInProgress = $derived(!dashboardPreferences.showItems && warrior.project !== null);
+  // The same figure as the Projects page's one-hour column.
+  const donePerHour = $derived(
+    projects.byName.get(warrior.project?.name ?? '')?.doneRate.h1 ?? null,
+  );
 </script>
 
 <!--
@@ -159,7 +169,7 @@
           />
         {/if}
         <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-2">
+          <div class="flex items-baseline gap-2">
             {#if warrior.project.name}
               <!-- A plain href: the router intercepts it, and importing the router here would
                    create a cycle (router -> Dashboard -> WarriorCard -> router). -->
@@ -171,12 +181,18 @@
             {:else}
               <span class="font-medium truncate">{warrior.project.title}</span>
             {/if}
+            {#if donePerHour !== null}
+              <span
+                class="tooltip shrink-0 cursor-help text-xs text-base-content/60 hover:before:delay-800 hover:after:delay-800"
+                data-tip="Items completed per hour by everyone working on this project, over the last hour. From the tracker, not this warrior."
+                >{formatPerHour(donePerHour)}</span
+              >
+            {/if}
             {#if warrior.runnerStatus === 'stopping'}
               <span class="badge badge-xs badge-warning">stopping</span>
             {/if}
           </div>
           <div class="text-xs text-base-content/60 flex gap-2">
-            <span>{runningItems} item{runningItems === 1 ? '' : 's'} running</span>
             {#if warrior.project.leaderboard}
               <a
                 class="link link-hover"
@@ -215,7 +231,7 @@
       </div>
     {/if}
 
-    {#if live && warrior.project && warrior.items.length === 0}
+    {#if dashboardPreferences.showItems && live && warrior.project && warrior.items.length === 0}
       <p class="grow-0 text-sm text-base-content/60">No items in flight.</p>
     {/if}
 
@@ -237,21 +253,30 @@
         </dl>
         <BandwidthSparkline history={warrior.bandwidthHistory} />
       </div>
-      {#if warrior.rolling && warrior.rolling.samples > 0}
-        <p
-          class="grow-0 text-xs text-base-content/60"
-          title="{warrior.rolling.samples} samples; peak ↓ {formatRate(
-            warrior.rolling.peakReceiving,
-          )} ↑ {formatRate(warrior.rolling.peakSending)}"
-        >
-          {formatWindow(warrior.rolling.windowMs)} average:
-          <span class="font-mono tabular-nums">↓ {formatRate(warrior.rolling.avgReceiving)}</span>
-          <span class="font-mono tabular-nums">↑ {formatRate(warrior.rolling.avgSending)}</span>
-        </p>
-      {/if}
     {/if}
 
-    {#if warrior.items.length}
+    {#if average || showInProgress}
+      <!-- The count sits at the right edge and wraps below the average when the row runs out of room. -->
+      <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-xs">
+        {#if average}
+          <p
+            class="grow-0 text-base-content/60"
+            title="{average.samples} samples; peak ↓ {formatRate(
+              average.peakReceiving,
+            )} ↑ {formatRate(average.peakSending)}"
+          >
+            {formatWindow(average.windowMs)} average:
+            <span class="font-mono tabular-nums">↓ {formatRate(average.avgReceiving)}</span>
+            <span class="font-mono tabular-nums">↑ {formatRate(average.avgSending)}</span>
+          </p>
+        {/if}
+        {#if showInProgress}
+          <span class="font-medium tabular-nums whitespace-nowrap">{runningItems} in progress</span>
+        {/if}
+      </div>
+    {/if}
+
+    {#if dashboardPreferences.showItems && warrior.items.length}
       <ul class="divide-y divide-base-200 -mx-1">
         {#each warrior.items as item (item.id)}
           <ItemRow {item} {now} />
