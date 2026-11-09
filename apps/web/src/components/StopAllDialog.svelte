@@ -27,6 +27,7 @@
 <WarriorBatchDialog
   title="Stop all warriors"
   verb="Stop"
+  subject="Stop"
   {rows}
   defaultChecked
   footnote="Each warrior finishes its items in flight, then sits idle until you choose a project. Nothing is shut down."

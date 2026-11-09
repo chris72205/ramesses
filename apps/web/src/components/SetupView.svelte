@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { WarriorRecord } from '@ramesses/shared';
   import { api } from '../lib/api';
+  import { notifications } from '../lib/notifications.svelte';
   import AddWarriorsForm from './AddWarriorsForm.svelte';
 
   let {
@@ -9,9 +10,16 @@
     ondone,
   }: { records: WarriorRecord[]; onchange: () => void; ondone: () => void } = $props();
 
-  async function remove(id: string): Promise<void> {
-    await api.deleteWarrior(id);
-    onchange();
+  async function remove(record: WarriorRecord): Promise<void> {
+    try {
+      await api.deleteWarrior(record.id);
+      notifications.success(`${record.name} removed`);
+      onchange();
+    } catch (error) {
+      notifications.error(
+        `${record.name}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
   }
 </script>
 
@@ -44,7 +52,7 @@
                   >
                 {/if}
               </span>
-              <button class="btn btn-ghost btn-xs shrink-0" onclick={() => void remove(record.id)}
+              <button class="btn btn-ghost btn-xs shrink-0" onclick={() => void remove(record)}
                 >Remove</button
               >
             </li>

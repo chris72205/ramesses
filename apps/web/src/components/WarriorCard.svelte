@@ -1,8 +1,9 @@
 <script lang="ts">
   import { WARRIOR_STATUS_TEXT, type WarriorSnapshot } from '@ramesses/shared';
-  import { controls } from '../lib/controls.svelte';
+  import { type ControlResult, controls } from '../lib/controls.svelte';
   import { dashboardPreferences } from '../lib/dashboard-preferences.svelte';
   import { formatAgo, formatBytes, formatPerHour, formatRate, formatWindow } from '../lib/format';
+  import { notifications } from '../lib/notifications.svelte';
   import { projects } from '../lib/projects.svelte';
   import BandwidthSparkline from './BandwidthSparkline.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
@@ -15,7 +16,6 @@
 
   const live = $derived(warrior.enabled && warrior.connection.state === 'connected');
   const pending = $derived(controls.pending[warrior.id] ?? null);
-  const controlError = $derived(controls.errors[warrior.id] ?? null);
   // A warrior that is shutting down or rebooting on its own cannot take a new project.
   const canStop = $derived(
     warrior.project !== null &&
@@ -36,15 +36,24 @@
     dialog = kind;
   }
 
-  function switchProject(): void {
+  // The dialog closes before the request goes out; the card shows the pending state and a toast
+  // reports whether the warrior accepted.
+  async function switchProject(): Promise<void> {
     const name = pickedProject;
     dialog = null;
-    if (name) void controls.selectProject(warrior, name);
+    if (!name) return;
+    const title = warrior.catalog[name]?.title ?? name;
+    report(await controls.selectProject(warrior, name), `Switching ${warrior.name} to ${title}`);
   }
 
-  function stopWorking(): void {
+  async function stopWorking(): Promise<void> {
     dialog = null;
-    void controls.deselectProject(warrior);
+    report(await controls.deselectProject(warrior), `Stopping work on ${warrior.name}`);
+  }
+
+  function report(result: ControlResult, accepted: string): void {
+    if (result.accepted) notifications.success(accepted);
+    else notifications.error(`${warrior.name}: ${result.error}`);
   }
   const statusLook = $derived.by(() => {
     switch (warrior.status) {
@@ -216,20 +225,6 @@
         {pending.label}
       </p>
     {/if}
-    {#if controlError}
-      <div
-        role="alert"
-        class="alert alert-error alert-soft flex justify-between gap-2 py-2 text-sm"
-      >
-        <span class="min-w-0">{controlError}</span>
-        <button
-          type="button"
-          class="btn btn-ghost btn-xs"
-          aria-label="Dismiss"
-          onclick={() => controls.dismissError(warrior.id)}>✕</button
-        >
-      </div>
-    {/if}
 
     {#if dashboardPreferences.showItems && live && warrior.project && warrior.items.length === 0}
       <p class="grow-0 text-sm text-base-content/60">No items in flight.</p>
@@ -303,7 +298,7 @@
     title="Change project for {warrior.name}"
     confirmLabel="Switch project"
     disabled={pickedProject === null || pickedProject === warrior.project?.name}
-    onconfirm={switchProject}
+    onconfirm={() => void switchProject()}
     oncancel={() => (dialog = null)}
   >
     <ProjectPicker
@@ -319,7 +314,7 @@
   <ConfirmDialog
     title="Stop working on {warrior.project?.title}?"
     confirmLabel="Stop working"
-    onconfirm={stopWorking}
+    onconfirm={() => void stopWorking()}
     oncancel={() => (dialog = null)}
   >
     <p>
