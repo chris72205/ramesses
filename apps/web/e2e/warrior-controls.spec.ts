@@ -19,6 +19,8 @@ test.beforeAll(async ({ request }) => {
   }
 });
 
+const toasts = (page: Page) => page.getByRole('region', { name: 'Notifications' });
+
 async function openActions(page: Page) {
   const card = page.locator('article').first();
   await expect(card.getByText('Connected')).toBeVisible({ timeout: 15_000 });
@@ -54,6 +56,7 @@ test('a project can be changed from the card', async ({ page }) => {
 
   await expect(dialog).toBeHidden();
   await expect(card.getByRole('status')).toHaveText(/Switching to Telegram/);
+  await expect(toasts(page).getByRole('status')).toHaveText(/Switching .* to Telegram/);
   await expect(card.getByRole('link', { name: 'Telegram' })).toBeVisible();
   // The fake warrior reports the new project running shortly after, which clears the line.
   await expect(card.getByRole('status')).toBeHidden({ timeout: 10_000 });
@@ -69,7 +72,9 @@ test('stop working drains the project and leaves the warrior idle', async ({ pag
   await expect(dialog.getByText(/Finishes the items in flight/)).toBeVisible();
   await dialog.getByRole('button', { name: 'Stop working' }).click();
 
+  await expect(dialog).toBeHidden();
   await expect(card.getByRole('status')).toHaveText(/Stopping work/);
+  await expect(toasts(page).getByRole('status')).toHaveText(/Stopping work on/);
   await expect(card.getByText('No project selected.')).toBeVisible({ timeout: 10_000 });
   await expect(card.getByText('Idle, no project selected')).toBeVisible();
   await expect(card.getByRole('status')).toBeHidden();
@@ -101,6 +106,7 @@ test('settings are read from the warrior, validated, and saved', async ({ page }
   await dialog.getByLabel('Concurrent items').selectOption('3');
   await save.click();
   await expect(dialog).toBeHidden();
+  await expect(toasts(page).getByRole('status')).toHaveText(/Settings saved for/);
 
   await card.getByRole('button', { name: /^Actions for/ }).click();
   await card.getByRole('menuitem', { name: 'Settings…' }).click();
@@ -125,9 +131,8 @@ test('a project page can put warriors onto its project', async ({ page }) => {
   await expect(run).toHaveText('Run on 1 warrior');
   await run.click();
 
-  await expect(dialog.getByText('accepted')).toBeVisible();
-  await dialog.getByRole('button', { name: 'Close' }).click();
   await expect(dialog).toBeHidden();
+  await expect(toasts(page).getByRole('status')).toContainText('Telegram requested on 1 warrior');
   await expect(mine.getByRole('link', { name: fakeWarrior() })).toBeVisible({ timeout: 15_000 });
 });
 
@@ -165,9 +170,8 @@ test.describe('stop all', () => {
     await expect(dialog.getByRole('checkbox')).toHaveCount(2);
     await expect(dialog.getByLabel('Stop warrior-two')).toBeChecked();
     await dialog.getByRole('button', { name: 'Stop 2 warriors' }).click();
-    await expect(dialog.getByText('accepted')).toHaveCount(2);
-    await dialog.getByRole('button', { name: 'Close' }).click();
     await expect(dialog).toBeHidden();
+    await expect(toasts(page).getByRole('status')).toContainText('Stop requested on 2 warriors');
 
     await expect(cards.getByText('No project selected.')).toHaveCount(2, { timeout: 10_000 });
     await expect(page.getByRole('button', { name: 'Stop all…' })).toBeDisabled();

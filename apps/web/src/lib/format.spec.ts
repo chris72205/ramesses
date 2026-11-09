@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { parseHostLine } from './api';
-import { formatBytes, formatDuration, formatRate } from './format';
+import { formatBytes, formatDuration, formatRate, pluralize } from './format';
 
 describe('format', () => {
+  it('pluralizes a count', () => {
+    expect(pluralize(1, 'warrior')).toBe('1 warrior');
+    expect(pluralize(0, 'warrior')).toBe('0 warriors');
+    expect(pluralize(3, 'warrior')).toBe('3 warriors');
+  });
+
   it('formats bytes in decimal units', () => {
     expect(formatBytes(0)).toBe('0 B');
     expect(formatBytes(999)).toBe('999 B');

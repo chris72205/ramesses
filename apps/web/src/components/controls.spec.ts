@@ -5,6 +5,7 @@ import type { WarriorCatalogProject, WarriorSnapshot } from '@ramesses/shared';
 import { api, ApiError } from '../lib/api';
 import { controls } from '../lib/controls.svelte';
 import { fleet } from '../lib/fleet.svelte';
+import { notifications } from '../lib/notifications.svelte';
 import { projects } from '../lib/projects.svelte';
 import { summary, warriorOn } from '../test/project-fixtures';
 import ConfirmDialog from './ConfirmDialog.svelte';
@@ -12,7 +13,9 @@ import ProjectPicker from './ProjectPicker.svelte';
 import RunOnProjectDialog from './RunOnProjectDialog.svelte';
 import Dashboard from './Dashboard.svelte';
 import StopAllDialog from './StopAllDialog.svelte';
+import Toasts from './Toasts.svelte';
 import WarriorCard from './WarriorCard.svelte';
+import { summarizeBatch } from './WarriorBatchDialog.svelte';
 import WarriorSettingsDialog from './WarriorSettingsDialog.svelte';
 import { createRawSnippet } from 'svelte';
 
@@ -68,7 +71,7 @@ const body = createRawSnippet(() => ({ render: () => '<p>Body text</p>' }));
 
 beforeEach(() => {
   controls.pending = {};
-  controls.errors = {};
+  notifications.clear();
   vi.spyOn(api, 'selectProject').mockResolvedValue(accepted);
   vi.spyOn(api, 'deselectProject').mockResolvedValue({ ...accepted, command: 'deselect_project' });
 });
@@ -355,6 +358,9 @@ describe('WarriorCard actions', () => {
       expect(screen.getByRole('status')).toHaveTextContent('Switching to Blogger…'),
     );
     expect(screen.getByRole('button', { name: 'Actions for warrior-1' })).toBeDisabled();
+    expect(notifications.items).toEqual([
+      expect.objectContaining({ level: 'success', message: 'Switching warrior-1 to Blogger' }),
+    ]);
   });
 
   it('cancels the picker without a request', async () => {
@@ -373,6 +379,9 @@ describe('WarriorCard actions', () => {
     await fireEvent.click(screen.getByRole('button', { name: 'Stop working' }));
     expect(api.deselectProject).toHaveBeenCalledWith('w1');
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Stopping work…'));
+    await waitFor(() =>
+      expect(notifications.items.map((n) => n.message)).toEqual(['Stopping work on warrior-1']),
+    );
 
     await rerender({ warrior: snapshot({ status: 'STOPPING_PROJECT' }), now: NOW });
     expect(screen.getByRole('status')).toBeInTheDocument();
@@ -381,15 +390,18 @@ describe('WarriorCard actions', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
-  it('shows the server error inline and lets it be dismissed', async () => {
+  it('reports a refused request as an error toast, not on the card', async () => {
     vi.mocked(api.deselectProject).mockRejectedValue(
       new ApiError(502, 'Could not reach warrior-1'),
     );
     render(WarriorCard, { warrior: snapshot(), now: NOW });
+    render(Toasts);
     await fireEvent.click(screen.getByRole('menuitem', { name: 'Stop working' }));
     await fireEvent.click(screen.getByRole('button', { name: 'Stop working' }));
     const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent('Could not reach warrior-1');
+    expect(alert).toHaveTextContent('warrior-1: Could not reach warrior-1');
+    expect(alert.closest('article')).toBeNull();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     await fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
@@ -501,7 +513,7 @@ describe('RunOnProjectDialog', () => {
     expect(screen.getByRole('button', { name: 'Run on 0 warriors' })).toBeDisabled();
   });
 
-  it('sends one request per checked warrior and reports each result', async () => {
+  it('closes at once, sends one request per checked warrior, and sums up in a toast', async () => {
     vi.mocked(api.selectProject)
       .mockResolvedValueOnce(accepted)
       .mockRejectedValueOnce(new ApiError(409, 'warrior-3 is not being tracked yet'));
@@ -512,15 +524,16 @@ describe('RunOnProjectDialog', () => {
     await fireEvent.click(screen.getByLabelText('Run on warrior-3'));
     await fireEvent.click(screen.getByRole('button', { name: 'Run on 2 warriors' }));
 
-    expect(await screen.findByText('accepted')).toBeInTheDocument();
-    expect(await screen.findByText('failed')).toBeInTheDocument();
-    expect(screen.getByText('warrior-3 is not being tracked yet')).toBeInTheDocument();
+    expect(onclose).toHaveBeenCalledOnce();
+    await waitFor(() => expect(notifications.items).toHaveLength(1));
+    expect(notifications.items[0]).toMatchObject({
+      level: 'error',
+      message:
+        'Blogger requested on 1 warrior (1 failed: warrior-3: warrior-3 is not being tracked yet)',
+    });
     expect(api.selectProject).toHaveBeenNthCalledWith(1, 'w1', 'blogger');
     expect(api.selectProject).toHaveBeenNthCalledWith(2, 'w3', 'blogger');
     expect(controls.pending['w1']?.label).toBe('Switching to Blogger…');
-    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument();
-    await fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    expect(onclose).toHaveBeenCalledOnce();
   });
 
   it('says when nothing is connected', () => {
@@ -565,17 +578,31 @@ describe('StopAllDialog', () => {
     });
     await fireEvent.click(screen.getByLabelText('Stop warrior-6'));
     await fireEvent.click(screen.getByRole('button', { name: 'Stop 1 warrior' }));
-    expect(await screen.findByText('accepted')).toBeInTheDocument();
+    expect(onclose).toHaveBeenCalledOnce();
+    await waitFor(() =>
+      expect(notifications.items.map((n) => n.message)).toEqual(['Stop requested on 1 warrior']),
+    );
+    expect(notifications.items[0]?.level).toBe('success');
     expect(api.deselectProject).toHaveBeenCalledTimes(1);
     expect(api.deselectProject).toHaveBeenCalledWith('w1');
     expect(controls.pending['w1']?.label).toBe('Stopping work…');
-    await fireEvent.click(screen.getByRole('button', { name: 'Close' }));
-    expect(onclose).toHaveBeenCalledOnce();
   });
 
   it('says when nothing is working', () => {
     render(StopAllDialog, { warriors: [warriors[2]!], onclose: vi.fn() });
     expect(screen.getByText(/No connected warrior is working/)).toBeInTheDocument();
+  });
+});
+
+describe('summarizeBatch', () => {
+  it('words the outcome by how many warriors accepted', () => {
+    expect(summarizeBatch('Telegram', 3, [])).toBe('Telegram requested on 3 warriors');
+    expect(summarizeBatch('Stop', 1, ['warrior-3: busy'])).toBe(
+      'Stop requested on 1 warrior (1 failed: warrior-3: busy)',
+    );
+    expect(summarizeBatch('Telegram', 0, ['warrior-3: busy', 'warrior-4: gone'])).toBe(
+      'Telegram failed on 2 warriors: warrior-3: busy; warrior-4: gone',
+    );
   });
 });
 

@@ -170,6 +170,24 @@ test('card actions: menu, project picker, and the pending line', async ({ page }
   await capture(page, 'dialog-settings', () =>
     expect(page.getByRole('dialog').getByLabel('Nickname')).toHaveValue('fake'),
   );
+  await page.getByRole('dialog').getByRole('button', { name: 'Cancel' }).click();
+
+  // Success toasts dismiss themselves, so each picture saves the settings again when the earlier
+  // toast has gone; one that survives shows the stack growing upward.
+  const saved = page
+    .getByRole('region', { name: 'Notifications' })
+    .getByRole('status')
+    .filter({ hasText: 'Settings saved' });
+  await capture(page, 'dashboard-toast', async () => {
+    if (!(await saved.first().isVisible())) {
+      await busy.getByRole('button', { name: /^Actions for/ }).click();
+      await busy.getByRole('menuitem', { name: 'Settings…' }).click();
+      const concurrency = page.getByRole('dialog').getByLabel('Concurrent items');
+      await concurrency.selectOption((await concurrency.inputValue()) === '2' ? '3' : '2');
+      await page.getByRole('dialog').getByRole('button', { name: 'Save' }).click();
+    }
+    await expect(saved.first()).toBeVisible();
+  });
 });
 
 test('projects index and detail', async ({ page }) => {

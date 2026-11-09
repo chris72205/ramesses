@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WarriorRecord } from '@ramesses/shared';
 import { ApiError } from '../lib/api';
 import type * as ApiModule from '../lib/api';
+import { notifications } from '../lib/notifications.svelte';
 import AddWarriorsForm from './AddWarriorsForm.svelte';
 import SetupView from './SetupView.svelte';
 import SocketBadge from './SocketBadge.svelte';
@@ -39,7 +40,12 @@ beforeEach(() => {
   mocks.deleteWarrior.mockReset().mockResolvedValue(undefined);
 });
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+  notifications.clear();
+});
+
+const messages = () => notifications.items.map((n) => `${n.level}: ${n.message}`);
 
 describe('AddWarriorsForm', () => {
   it('adds a single warrior and clears the fields', async () => {
@@ -51,6 +57,7 @@ describe('AddWarriorsForm', () => {
     await fireEvent.input(screen.getByPlaceholderText('warrior-1'), { target: { value: 'three' } });
     await fireEvent.click(screen.getByRole('button', { name: 'Add' }));
     await waitFor(() => expect(onadded).toHaveBeenCalled());
+    expect(messages()).toEqual(['success: Added 1 warrior']);
     expect(mocks.createWarrior).toHaveBeenCalledWith({
       host: '192.0.2.10',
       port: 8003,
@@ -73,6 +80,7 @@ describe('AddWarriorsForm', () => {
     expect(onadded).toHaveBeenCalledTimes(1);
     expect(await screen.findByText('b:2: already exists')).toBeInTheDocument();
     expect((box as HTMLTextAreaElement).value).toContain('b:2');
+    expect(messages()).toEqual(['success: Added 2 warriors']);
   });
 
   it('ignores an empty bulk submission', async () => {
@@ -92,7 +100,8 @@ describe('SetupView', () => {
     expect(screen.getByText('Added (2)')).toBeInTheDocument();
     await fireEvent.click(screen.getAllByRole('button', { name: 'Remove' })[0]!);
     await waitFor(() => expect(mocks.deleteWarrior).toHaveBeenCalledWith('1'));
-    expect(onchange).toHaveBeenCalled();
+    await waitFor(() => expect(onchange).toHaveBeenCalled());
+    expect(messages()).toEqual(['success: w-1 removed']);
     await fireEvent.click(screen.getByRole('button', { name: 'Open dashboard' }));
     expect(ondone).toHaveBeenCalled();
   });
@@ -100,6 +109,15 @@ describe('SetupView', () => {
   it('hides the list until something was added', () => {
     render(SetupView, { records: [], onchange: vi.fn(), ondone: vi.fn() });
     expect(screen.queryByText(/Added/)).not.toBeInTheDocument();
+  });
+
+  it('reports a failed removal', async () => {
+    mocks.deleteWarrior.mockRejectedValueOnce(new ApiError(502, 'nope'));
+    const onchange = vi.fn();
+    render(SetupView, { records: [record('1')], onchange, ondone: vi.fn() });
+    await fireEvent.click(screen.getByRole('button', { name: 'Remove' }));
+    await waitFor(() => expect(messages()).toEqual(['error: w-1: nope']));
+    expect(onchange).not.toHaveBeenCalled();
   });
 });
 
@@ -112,7 +130,8 @@ describe('WarriorsManager', () => {
     await waitFor(() => expect(mocks.updateWarrior).toHaveBeenCalledWith('1', { enabled: false }));
     await fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     await waitFor(() => expect(mocks.deleteWarrior).toHaveBeenCalledWith('1'));
-    expect(onchange).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(onchange).toHaveBeenCalledTimes(2));
+    expect(messages()).toEqual(['success: w-1 disabled', 'success: w-1 deleted']);
   });
 
   it('repeats the address under the name only when the name differs', () => {
@@ -128,11 +147,14 @@ describe('WarriorsManager', () => {
     expect(screen.getAllByText('10.0.0.1:8001')).toHaveLength(2);
   });
 
-  it('shows API errors and an empty state', async () => {
+  it('reports API errors as toasts and shows an empty state', async () => {
     mocks.deleteWarrior.mockRejectedValueOnce(new Error('nope'));
-    const first = render(WarriorsManager, { records: [record('1')], onchange: vi.fn() });
+    const onchange = vi.fn();
+    const first = render(WarriorsManager, { records: [record('1')], onchange });
     await fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
-    expect(await screen.findByText('nope')).toBeInTheDocument();
+    await waitFor(() => expect(messages()).toEqual(['error: w-1: nope']));
+    expect(onchange).not.toHaveBeenCalled();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     first.unmount();
     render(WarriorsManager, { records: [], onchange: vi.fn() });
     expect(screen.getByText('No warriors configured.')).toBeInTheDocument();
