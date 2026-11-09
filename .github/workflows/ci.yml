@@ -5,8 +5,19 @@ on:
     branches: [main]
   pull_request:
 
+# The four jobs are independent and start together. Their names are the required status
+# checks on main, so renaming one means updating the branch ruleset in the same change.
 jobs:
-  verify:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm format:check
+
+  test:
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -28,25 +39,65 @@ jobs:
       REDIS_URL: redis://localhost:6380
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm lint
-      - run: pnpm format:check
+      - uses: ./.github/actions/setup
       - run: pnpm test:coverage
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: coverage
+          path: coverage/lcov-report
+          retention-days: 7
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
       - run: pnpm build
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: ramesses
+          POSTGRES_PASSWORD: ramesses
+          POSTGRES_DB: ramesses
+        ports: ['5433:5432']
+        options: >-
+          --health-cmd "pg_isready -U ramesses" --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:8-alpine
+        ports: ['6380:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgres://ramesses:ramesses@localhost:5433/ramesses
+      REDIS_URL: redis://localhost:6380
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      # The server build (migrations and the backend the e2e setup boots) requires the
+      # compiled shared package; the e2e script does not build it the way the other root
+      # scripts do.
+      - run: pnpm build:shared
       - run: pnpm --filter @ramesses/server migration:run
-      - run: pnpm --filter @ramesses/web exec playwright install --with-deps chromium
+      - id: playwright
+        run: echo "version=$(pnpm --filter @ramesses/web exec playwright --version | sed 's/^Version //')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+      - if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @ramesses/web exec playwright install --with-deps chromium
+      - if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter @ramesses/web exec playwright install-deps chromium
       - run: pnpm test:e2e
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: reports
-          path: |
-            coverage/lcov-report
-            apps/web/playwright-report
+          name: playwright-report
+          path: apps/web/playwright-report
           retention-days: 7
