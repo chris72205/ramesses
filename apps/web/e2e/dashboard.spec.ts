@@ -21,7 +21,7 @@ test('first run asks for warriors, then shows them live on the dashboard', async
   await expect(card.getByText('Connected')).toBeVisible({ timeout: 15_000 });
   await expect(card.getByText('Working on a project')).toBeVisible();
   await expect(card.getByText('uploader.jp')).toBeVisible();
-  await expect(card.getByText('3 items running')).toBeVisible();
+  await expect(card.locator('summary')).toHaveCount(3);
   await expect(card.getByText('1.00 kB/s')).toBeVisible();
 
   // Fleet summary reflects the one connected warrior.
@@ -31,6 +31,44 @@ test('first run asks for warriors, then shows them live on the dashboard', async
   // Items expand to show their log.
   await card.locator('summary').first().click();
   await expect(card.locator('pre').first()).toContainText(/Starting|Finished|Received/);
+});
+
+test('hiding items survives a reload and follows across tabs', async ({ page, context }) => {
+  await page.goto('/');
+  const card = page.locator('article').first();
+  const toggle = page.getByRole('checkbox', { name: 'Show items' });
+  await expect(card.getByText('Connected')).toBeVisible({ timeout: 15_000 });
+  await expect(toggle).toBeChecked();
+  await expect(card.locator('summary').first()).toBeVisible();
+
+  // The toggle shares the heading's row and leaves the stat values in line with each other.
+  const heading = (await page.getByText('Items in flight', { exact: true }).boundingBox())!;
+  const control = (await toggle.boundingBox())!;
+  expect(Math.abs(heading.y + heading.height / 2 - (control.y + control.height / 2))).toBeLessThan(
+    1,
+  );
+  const valueTops = await page
+    .locator('.stat-value')
+    .evaluateAll((values) => values.map((value) => value.getBoundingClientRect().top));
+  expect(Math.max(...valueTops) - Math.min(...valueTops)).toBeLessThan(1);
+
+  await toggle.uncheck();
+  await expect(card.locator('summary')).toHaveCount(0);
+  await expect(card.getByText('3 in progress')).toBeVisible();
+
+  await page.reload();
+  await expect(card.getByText('Connected')).toBeVisible({ timeout: 15_000 });
+  await expect(toggle).not.toBeChecked();
+  await expect(card.locator('summary')).toHaveCount(0);
+
+  const otherTab = await context.newPage();
+  await otherTab.goto('/');
+  const otherToggle = otherTab.getByRole('checkbox', { name: 'Show items' });
+  await expect(otherToggle).not.toBeChecked();
+  await otherToggle.check();
+  await expect(toggle).toBeChecked();
+  await expect(card.locator('summary').first()).toBeVisible();
+  await otherTab.close();
 });
 
 test('warriors can be disabled and removed from the settings page', async ({ page }) => {

@@ -1,6 +1,9 @@
-import { render, screen } from '@testing-library/svelte';
-import { describe, expect, it } from 'vitest';
-import type { ItemSnapshot, WarriorSnapshot } from '@ramesses/shared';
+import { fireEvent, render, screen } from '@testing-library/svelte';
+import { afterEach, describe, expect, it } from 'vitest';
+import type { FleetTotals, ItemSnapshot, WarriorSnapshot } from '@ramesses/shared';
+import { dashboardPreferences } from '../lib/dashboard-preferences.svelte';
+import { projects } from '../lib/projects.svelte';
+import { catalog } from '../test/project-fixtures';
 import ConnectionBadge from './ConnectionBadge.svelte';
 import FleetSummary from './FleetSummary.svelte';
 import ItemRow from './ItemRow.svelte';
@@ -154,25 +157,45 @@ describe('ItemRow', () => {
 });
 
 describe('FleetSummary', () => {
+  const totals: FleetTotals = {
+    warriors: 6,
+    enabled: 5,
+    connected: 4,
+    receiving: 1234,
+    sending: 10,
+    received: 5e9,
+    sent: 1e6,
+    itemsInFlight: 12,
+    completed: 30,
+    failed: 2,
+    projects: ['Telegram', 'URLs'],
+    rollingWindowMs: 300_000,
+    avgReceiving: 2_000,
+    avgSending: 100,
+  };
+
+  afterEach(() => {
+    dashboardPreferences.setShowItems(true);
+  });
+
+  it('turns the item rows off and on from the toggle', async () => {
+    render(FleetSummary, { totals });
+    const toggle = screen.getByRole('checkbox', { name: 'Show items' });
+    expect(toggle).toBeChecked();
+    await fireEvent.click(toggle);
+    expect(toggle).not.toBeChecked();
+    expect(dashboardPreferences.showItems).toBe(false);
+    await fireEvent.click(toggle);
+    expect(dashboardPreferences.showItems).toBe(true);
+  });
+
+  it('offers no toggle for an empty fleet', () => {
+    render(FleetSummary, { totals: { ...totals, warriors: 0, enabled: 0 } });
+    expect(screen.queryByRole('checkbox', { name: 'Show items' })).not.toBeInTheDocument();
+  });
+
   it('renders totals', () => {
-    render(FleetSummary, {
-      totals: {
-        warriors: 6,
-        enabled: 5,
-        connected: 4,
-        receiving: 1234,
-        sending: 10,
-        received: 5e9,
-        sent: 1e6,
-        itemsInFlight: 12,
-        completed: 30,
-        failed: 2,
-        projects: ['Telegram', 'URLs'],
-        rollingWindowMs: 300_000,
-        avgReceiving: 2_000,
-        avgSending: 100,
-      },
-    });
+    render(FleetSummary, { totals });
     expect(screen.getByText('4')).toBeInTheDocument();
     expect(screen.getByText('/ 5')).toBeInTheDocument();
     expect(screen.getByText('1.23 kB/s')).toBeInTheDocument();
@@ -184,6 +207,91 @@ describe('FleetSummary', () => {
 });
 
 describe('WarriorCard', () => {
+  afterEach(() => {
+    dashboardPreferences.setShowItems(true);
+  });
+
+  it('keeps the summary lines but drops the item rows when items are hidden', () => {
+    dashboardPreferences.setShowItems(false);
+    const { container } = render(WarriorCard, { warrior, now: NOW });
+    expect(container.querySelector('summary')).not.toBeInTheDocument();
+    expect(screen.getByText('1 in progress')).toBeInTheDocument();
+    expect(screen.getByText('45.5 kB/s')).toBeInTheDocument();
+    expect(screen.getByText(/3 completed · 1 failed/)).toBeInTheDocument();
+  });
+
+  it('drops the empty-items line when items are hidden', () => {
+    dashboardPreferences.setShowItems(false);
+    render(WarriorCard, { warrior: { ...warrior, items: [] }, now: NOW });
+    expect(screen.queryByText('No items in flight.')).not.toBeInTheDocument();
+  });
+
+  it('renders the item rows by default, without the in-progress count', () => {
+    const { container } = render(WarriorCard, { warrior, now: NOW });
+    expect(container.querySelector('summary')).toBeInTheDocument();
+    expect(screen.queryByText(/in progress$/)).not.toBeInTheDocument();
+  });
+
+  it('counts only running items when items are hidden', () => {
+    dashboardPreferences.setShowItems(false);
+    const finished = { ...item, id: 'finished', status: 'failed' as const, finishedAt: NOW };
+    render(WarriorCard, { warrior: { ...warrior, items: [item, finished] }, now: NOW });
+    expect(screen.getByText('1 in progress')).toBeInTheDocument();
+  });
+
+  it('still shows the in-progress count before there is an average', () => {
+    dashboardPreferences.setShowItems(false);
+    render(WarriorCard, { warrior: { ...warrior, bandwidth: null, rolling: null }, now: NOW });
+    expect(screen.queryByText(/average:/)).not.toBeInTheDocument();
+    expect(screen.getByText('1 in progress')).toBeInTheDocument();
+  });
+
+  describe('tracker done rate', () => {
+    const on = (name: string | null): WarriorSnapshot => ({
+      ...warrior,
+      project: { ...warrior.project!, name },
+    });
+
+    afterEach(() => {
+      projects.replace([]);
+    });
+
+    it('shows the one-hour rate and explains it on hover', () => {
+      projects.replace(catalog);
+      render(WarriorCard, { warrior: on(catalog[0]!.name), now: NOW });
+      expect(screen.getByText('437K/h')).toHaveAttribute(
+        'data-tip',
+        expect.stringContaining('completed per hour by everyone'),
+      );
+    });
+
+    it('shows a rate of zero, which is a real reading', () => {
+      projects.replace(catalog);
+      render(WarriorCard, { warrior: on('telegram'), now: NOW });
+      expect(screen.getByText('0/h')).toBeInTheDocument();
+    });
+
+    it.each([
+      ['has no one-hour rate yet', 'pastebin'],
+      ['has no samples', 'urlteam2'],
+      ['is not in the catalog', 'unknown-project'],
+      ['has no catalog key', null],
+    ])('shows nothing when the project %s', (_label, name) => {
+      projects.replace(catalog);
+      render(WarriorCard, { warrior: on(name), now: NOW });
+      expect(screen.queryByText(/\/h$/)).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows no in-progress count for a warrior without a project', () => {
+    dashboardPreferences.setShowItems(false);
+    render(WarriorCard, {
+      warrior: { ...warrior, project: null, items: [], status: 'NO_PROJECT' },
+      now: NOW,
+    });
+    expect(screen.queryByText(/in progress$/)).not.toBeInTheDocument();
+  });
+
   it('renders a connected warrior with project, bandwidth, and items', () => {
     render(WarriorCard, { warrior, now: NOW });
     expect(screen.getByText('warrior-1')).toBeInTheDocument();
@@ -201,7 +309,6 @@ describe('WarriorCard', () => {
     );
     expect(screen.getByText('45.5 kB/s')).toBeInTheDocument();
     expect(screen.getByText('310 MB')).toBeInTheDocument();
-    expect(screen.getByText('1 item running')).toBeInTheDocument();
     expect(screen.getByText(/3 completed · 1 failed/)).toBeInTheDocument();
     expect(screen.getByRole('img', { name: /Bandwidth over the last 2 s/ })).toBeInTheDocument();
   });
