@@ -25,6 +25,24 @@ describe('ProjectsStore', () => {
     expect(store.loadedAt).not.toBeNull();
   });
 
+  it('stores the catalog as plain objects and re-derives the index on replace', () => {
+    const store = new ProjectsStore();
+    const first = catalog.slice(0, 2);
+    store.replace(first);
+    // Raw state: the summaries and their trend points are the same objects that came in, not
+    // proxies, so a catalog push creates no signals per field.
+    expect(store.items).toBe(first);
+    expect(store.items[0]).toBe(first[0]);
+    expect(store.items[0]!.trend).toBe(first[0]!.trend);
+    expect(store.byName.get(first[1]!.name)).toBe(first[1]);
+
+    const second = catalog.slice(2);
+    store.replace(second);
+    expect(store.items).toBe(second);
+    expect(store.byName.has(first[0]!.name)).toBe(false);
+    expect(store.byName.get(second[0]!.name)).toBe(second[0]);
+  });
+
   it('records errors and does not overlap loads', async () => {
     let release!: (value: never[]) => void;
     mocks.listProjects.mockImplementationOnce(() => new Promise((resolve) => (release = resolve)));

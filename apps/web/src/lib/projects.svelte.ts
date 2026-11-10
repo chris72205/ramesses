@@ -9,7 +9,11 @@ import { api } from './api';
  * stored whole, hidden projects included; the Projects page filters it from its URL query.
  */
 export class ProjectsStore {
-  items = $state<ProjectSummary[]>([]);
+  /**
+   * Raw state: the catalog is only ever replaced whole and never edited in place, so a deep proxy
+   * would turn every trend point into a signal for nothing. Readers see a new array per push.
+   */
+  items = $state.raw<ProjectSummary[]>([]);
   loading = $state(false);
   error = $state<string | null>(null);
   /** ms since epoch of the last successful load, null before the first */
