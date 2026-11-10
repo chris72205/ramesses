@@ -136,6 +136,32 @@ describe('item lifecycle', () => {
     expect(s.items).toHaveLength(0);
   });
 
+  it('leaves the item list and updatedAt alone when nothing has expired', () => {
+    const s = createSnapshot(record, T0);
+    applyEvent(s, { event_name: 'pipeline.start_item', message: { pipeline_id: 1, item } }, T0);
+    applyEvent(
+      s,
+      {
+        event_name: 'pipeline.start_item',
+        message: { pipeline_id: 1, item: { ...item, id: 'abc-2' } },
+      },
+      T0,
+    );
+    applyEvent(
+      s,
+      { event_name: 'item.complete', message: { pipeline_id: 1, item_id: 'abc-2' } },
+      T0,
+    );
+    const items = s.items;
+    expect(pruneFinishedItems(s, T0 + FINISHED_ITEM_TTL_MS - 1)).toBe(false);
+    expect(s.items).toBe(items);
+    expect(s.updatedAt).toBe(T0);
+    expect(pruneFinishedItems(s, T0 + FINISHED_ITEM_TTL_MS)).toBe(true);
+    expect(s.items).not.toBe(items);
+    expect(s.items.map((i) => i.id)).toEqual(['abc-1']);
+    expect(s.updatedAt).toBe(T0 + FINISHED_ITEM_TTL_MS);
+  });
+
   it('counts failures and cancellations even when the item is unknown', () => {
     const s = createSnapshot(record, T0);
     applyEvent(s, { event_name: 'item.fail', message: { pipeline_id: 1, item_id: 'nope' } }, T0);
