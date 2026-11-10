@@ -243,10 +243,14 @@ describe('FleetStore', () => {
       fleet: totals,
       projects: [],
     });
+    const items = store.warriors['a']!.items;
     vi.advanceTimersByTime(1000);
     expect(store.warriors['a']!.items.map((i) => i.id)).toEqual(['i1', 'i2']);
+    // A tick that removes nothing must not swap the array, or every card re-renders its list.
+    expect(store.warriors['a']!.items).toBe(items);
     vi.advanceTimersByTime(FINISHED_ITEM_TTL_MS);
     expect(store.warriors['a']!.items.map((i) => i.id)).toEqual(['i1']);
+    expect(store.warriors['a']!.items).not.toBe(items);
     expect(store.now).toBe(100_000 + 1000 + FINISHED_ITEM_TTL_MS);
   });
 

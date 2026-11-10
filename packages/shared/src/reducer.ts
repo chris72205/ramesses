@@ -209,14 +209,19 @@ export function applyEvent(snapshot: WarriorSnapshot, event: WarriorEvent, now: 
   }
 }
 
-/** Drop finished items older than the TTL. Returns true when something was removed. */
+/**
+ * Drop finished items older than the TTL. Returns true when something was removed.
+ *
+ * The item list is left untouched when nothing has expired. The browser runs this every second
+ * on a reactive snapshot, where swapping in an equal array would invalidate every card's item list
+ * for no change.
+ */
 export function pruneFinishedItems(snapshot: WarriorSnapshot, now: number): boolean {
-  const before = snapshot.items.length;
-  snapshot.items = snapshot.items.filter(
-    (item) => item.finishedAt === null || now - item.finishedAt < FINISHED_ITEM_TTL_MS,
-  );
-  if (snapshot.items.length !== before) return touch(snapshot, now);
-  return false;
+  const expired = (item: ItemSnapshot): boolean =>
+    item.finishedAt !== null && now - item.finishedAt >= FINISHED_ITEM_TTL_MS;
+  if (!snapshot.items.some(expired)) return false;
+  snapshot.items = snapshot.items.filter((item) => !expired(item));
+  return touch(snapshot, now);
 }
 
 function touch(snapshot: WarriorSnapshot, now: number): true {
