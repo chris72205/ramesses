@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
 import type { ItemSnapshot, WarriorSnapshot } from '@ramesses/shared';
 import { fleet } from '../lib/fleet.svelte';
@@ -112,12 +112,15 @@ describe('ItemRow and TaskProgress variants', () => {
     finishedAt: NOW,
   };
 
-  it('falls back to the item number, shows canceled, and reports missing output', () => {
-    render(ItemRow, { item, now: NOW });
+  it('falls back to the item number, shows canceled, and reports missing output', async () => {
+    const { container } = render(ItemRow, { item, now: NOW });
     expect(screen.getAllByText('#3')).toHaveLength(2);
     expect(screen.getByText('canceled')).toHaveClass('badge-warning');
-    expect(screen.getByText('No output yet.')).toBeInTheDocument();
     expect(screen.getByText('10s')).toBeInTheDocument();
+    const details = container.querySelector('details')!;
+    details.open = true;
+    await fireEvent(details, new Event('toggle'));
+    expect(screen.getByText('No output yet.')).toBeInTheDocument();
   });
 
   it('shows completed and a finished task list as done', () => {
