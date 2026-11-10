@@ -5,6 +5,11 @@
 
   let { item, now }: { item: ItemSnapshot; now: number } = $props();
 
+  // The log block mounts only while the row is expanded. Output chunks arrive many times a second
+  // for every running item, and a collapsed row would otherwise rewrite a hidden text node of
+  // several kilobytes on each one.
+  let open = $state(false);
+
   const elapsed = $derived(
     formatDuration(((item.finishedAt ?? now) - item.startTime * 1000) / 1000),
   );
@@ -23,7 +28,7 @@
 </script>
 
 <li class="py-2 px-1">
-  <details class="group">
+  <details class="group" bind:open>
     <summary class="list-none cursor-pointer space-y-1">
       <div class="flex items-center gap-2 text-sm">
         <span class="font-mono text-xs text-base-content/50 shrink-0">#{item.number}</span>
@@ -35,11 +40,13 @@
       </div>
       <TaskProgress tasks={item.tasks} />
     </summary>
-    {#if item.logTail}
-      <pre
-        class="mt-2 max-h-48 overflow-auto rounded bg-neutral text-neutral-content p-2 text-[11px] leading-tight whitespace-pre-wrap break-all">{item.logTail}</pre>
-    {:else}
-      <p class="mt-2 text-xs text-base-content/50">No output yet.</p>
+    {#if open}
+      {#if item.logTail}
+        <pre
+          class="mt-2 max-h-48 overflow-auto rounded bg-neutral text-neutral-content p-2 text-[11px] leading-tight whitespace-pre-wrap break-all">{item.logTail}</pre>
+      {:else}
+        <p class="mt-2 text-xs text-base-content/50">No output yet.</p>
+      {/if}
     {/if}
   </details>
 </li>

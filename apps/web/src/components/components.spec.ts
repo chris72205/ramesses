@@ -142,12 +142,23 @@ describe('ConnectionBadge', () => {
 });
 
 describe('ItemRow', () => {
-  it('renders number, cleaned name, elapsed time, and log', () => {
-    render(ItemRow, { item, now: NOW });
+  it('renders number, cleaned name, and elapsed time, and mounts the log only once expanded', async () => {
+    const { container } = render(ItemRow, { item, now: NOW });
     expect(screen.getByText('#7')).toBeInTheDocument();
     expect(screen.getByText('post:channel:1 · post:channel:2')).toBeInTheDocument();
     expect(screen.getByText('1m 05s')).toBeInTheDocument();
+    // Collapsed rows carry no log text, so output chunks do not rewrite a hidden node.
+    expect(screen.queryByText(/Finished CheckIP/)).not.toBeInTheDocument();
+    expect(container.querySelector('pre')).toBeNull();
+
+    const details = container.querySelector('details')!;
+    details.open = true;
+    await fireEvent(details, new Event('toggle'));
     expect(screen.getByText(/Finished CheckIP/)).toBeInTheDocument();
+
+    details.open = false;
+    await fireEvent(details, new Event('toggle'));
+    expect(container.querySelector('pre')).toBeNull();
   });
 
   it('shows a status badge for finished items', () => {
